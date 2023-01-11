@@ -165,7 +165,6 @@ empresa''')
                 ult_at = result[0][0]
                 if ult_at == None: ## filtrando os None pq nao da para converter para tipo date
                     ult_at = datetime.datetime.strptime("1970-01-01", '%Y-%m-%d')
-                ult_at = ult_at
 
                 # verificando se já a cotação ja foi atualizada hoje
                 if ult_cot.date() > ult_at.date():
