@@ -7,9 +7,6 @@ import sys
 one_day = 60 * 60 * 24
 now = datetime.datetime.now()
 
-if now.hour == 23:
-    sys.exit("\
-Esse script está impedido de ser executado depois das 23:00 para nao haver conflito de dados entre os dias")
 
 def converComTD(strin):  # função para transformar string com virgula in float
     wtt_dot = strin.replace('.', '')
@@ -29,6 +26,7 @@ def isCorr(dic):  ## função para verificar se os dados estão corretos
             return j + ' is incorrect'  ## retornar o valor da variavel incorreta
     else:
         return 'correct'
+
 
 driver = webdriver.Chrome("C:\Program Files\Google\Chrome\Application\chromedriver_win32\chromedriver.exe")
 
@@ -165,18 +163,19 @@ empresa''')
                 ult_at = result[0][0]
                 if ult_at == None: ## filtrando os None pq nao da para converter para tipo date
                     ult_at = datetime.datetime.strptime("1970-01-01", '%Y-%m-%d')
-                ult_at = ult_at
-
-                # verificando se já a cotação ja foi atualizada hoje
-                if ult_cot.date() > ult_at.date():
+                ult_at = ult_at.date()
+                today = now.date().day
+                dif_days = today - ult_at.day
+                dif_last_cot_day = today - ult_cot.date().day
+                if dif_days > dif_last_cot_day:  # verificando se já a cotação ja foi atualizada hoje
                     print('''\
-                    a cotação não foi atualizada. inserindo cotação e dividendyield para o db diario''')
+a cotação não foi atualizada. inserindo cotação e dividendyield para o db diario''')
                     sql = '''INSERT INTO acoesb3daily (cod, cotAtual, divYield) VALUES (%s, %s, %s) '''
                     ## verificando se os dados estão corretos
                     val = (emp, converComTD(v_dados[3]), converComTD(v_dados[67]))
                     mycursor.execute(sql, val)
                     mydb.commit()
-                    print(mycursor.rowcount, f"record inserted. values {val} on acoesb3daily")
+                    print(mycursor.rowcount, f"record inserted. vales {val} on acoesb3daily")
                 else:
                     print(f'''\
-Não atualizando o preço para {emp}. Já está atualizado''')
+Não atualizando o preço para {emp}. A data da ultima cotação é a mesma em que a data da última atualização no db''')
