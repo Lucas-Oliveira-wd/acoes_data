@@ -171,4 +171,4 @@ Não atualizando o preço para {emp}. A data da ultima cotação é a mesma em q
                            )
                     mycursor.execute(sql, val)
                     mydb.commit()
-                    print(mycursor.rowcount, f"record inserted. vales {val} on acoesb3")
+                    print(mycursor.rowcount, f"record inserted. values {val} on acoesb3")
