@@ -7,13 +7,6 @@ import sys
 one_day = 60 * 60 * 24
 now = datetime.datetime.now()
 
-if now.hour >= 23:
-    sys.exit('''\
-Aviso de segurança! Esse script está impedido de ser executado entre as 23:00 e 00:00. 
-Alguns dados podem ficar com o auto increment_current_timestamp com datas diferentes, o que prejudicaria
-futuras buscas por data.
-''')
-
 def converComTD(strin):  # função para transformar string com virgula in float
     wtt_dot = strin.replace('.', '')
     wtt_com = wtt_dot.replace(',', '.')
@@ -127,35 +120,31 @@ for emp in empresas:
                        v_dados[97], v_dados[102], v_dados[106], v_dados[110], v_dados[104])  ## essa lista é para
         # checkar se os dados estão corretos
         if isCorr(valBefCheck) == 'correct':
-            dif = datetime.datetime.now().date() - datetime.datetime.strptime(
-                f'{v_dados[23][6:]}-{v_dados[23][3:5]}-{v_dados[23][0:2]}',
-                '%Y-%m-%d').date()  ## diferença entre o ultimo balanço e hoje
-            dif_last_cot = datetime.datetime.now().date() - datetime.datetime.strptime(
-                f'{v_dados[7][6:]}-{v_dados[7][3:5]}-{v_dados[7][0:2]}',
-                '%Y-%m-%d').date()  ## diferença entre a ultima cotação e hoje
-            if dif.days < stop_at and dif_last_cot.days < stop_at and \
-                    converComTD(v_dados[32]) > 0:  ##filtrando as empresa que nao
+            dif = now.date() - datetime.datetime.strptime(f'\
+{v_dados[23][6:]}-{v_dados[23][3:5]}-{v_dados[23][0:2]}', '%Y-%m-%d').date()## diferença entre o ultimo balanço e hoje
+            dif_last_cot = now.date() - datetime.datetime.strptime(f'\
+{v_dados[7][6:]}-{v_dados[7][3:5]}-{v_dados[7][0:2]}', '%Y-%m-%d').date()  ## diferença entre a ultima cotação e hoje
+            if dif.days < stop_at and dif_last_cot.days < stop_at:  ##filtrando as empresa que nao
                 # atualizam seus dados a mais de que o tempo de stop_at
-                sql = f"SELECT ultBal FROM acoesb3 WHERE codigo = '{emp}'"  ## buscando o
+                sql = f"SELECT MAX(ultBal) FROM acoesb3 WHERE codigo = '{emp}'"  ## buscando o
                 # ultimo balanço das empresas no db
                 mycursor.execute(sql)
                 result = mycursor.fetchall()
-                ult_bal = []
-                for i in result:
-                    ult_bal.append(str(i[0].day) + '/' + str(i[0].month).zfill(2) + '/' + str(i[0].year))
-                if ult_bal.count(v_dados[23]):
+                ult_bal = result[0][0]
+                if ult_bal == v_dados[23]:
                     print(f'''\
 {emp} não mudou desde o ultimo balaço processado. Portanto sem alterações feitas paraos dados trimestrais dessa
 empresa''')
                     print('''analizando se a cotação já está atualizada''')
-                    now = datetime.datetime.now()
                     # verificando a ultima atualização no db
                     sql = f"""SELECT MAX(date) FROM acoesb3daily WHERE cod = '{emp}'"""
                     mycursor.execute(sql)
                     result = mycursor.fetchall()
                     ult_at = result[0][0].date()
-                    dif_days = (now.date() - ult_at).days
-                    if dif_days > dif_last_cot.days:  # verificando se já a cotação ja foi atualizada hoje
+                    today = now.date().day
+                    dif_days = today - ult_at.day
+                    dif_last_cot_day = today - v_dados[7].date().day
+                    if dif_days > dif_last_cot_day:  # verificando se já a cotação ja foi atualizada hoje
                         print('''\
 a cotação não foi atualizada. inserindo cotação e dividendyield para o db diario''')
                         sql = '''INSERT INTO acoesb3daily (cod, cotAtual, divYield) VALUES (%s, %s, %s) '''
