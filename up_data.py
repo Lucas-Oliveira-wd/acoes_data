@@ -86,7 +86,7 @@ for emp in empresas:
         element = a.find('span', attrs={'class': 'txt'})  ## os valores estao dentro de <span>
         if hasattr(element, 'text'):  ## checando se os elementos tem o atributo txt
             v_dados.append(element.text)  ## adicionando os dados e um dicionario
-            '''     
+            '''\     
                         # SUMÁRIO DOS DADOS EM v_dados[]  ## !IMPORTANT, Esse sumário não serve para os bancos
 
             Papel:  1; Cotação:  3; Tipo:  5; Data últ cot:  7; Empresa:  9; Min 52 sem:  11; Setor:  13;
@@ -154,7 +154,8 @@ for emp in empresas:
                     mycursor.execute(sql, val)
                     mydb.commit()
                     print(mycursor.rowcount, f"record inserted. vales {val} on acoesb3")
-                print(f'''\
+		if ult_bal_db == ult_bal.date():
+                    print(f'''\
 {emp} não mudou desde o ultimo balaço processado. Portanto sem alterações feitas para os dados trimestrais dessa
 empresa''')
                 print('''analizando se a cotação já está atualizada''')
@@ -166,7 +167,7 @@ empresa''')
                 if ult_at == None: ## filtrando os None pq nao da para converter para tipo date
                     ult_at = datetime.datetime.strptime("1970-01-01", '%Y-%m-%d')
 
-                # verificando se já a cotação ja foi atualizada hoje
+                # verificando se a cotação ja foi atualizada hoje
                 if ult_cot.date() > ult_at.date():
                     print('''\
                     a cotação não foi atualizada. inserindo cotação e dividendyield para o db diario''')
