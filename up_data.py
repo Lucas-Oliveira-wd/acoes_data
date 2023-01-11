@@ -168,8 +168,6 @@ empresa''')
                 ult_at = ult_at
 
                 # verificando se já a cotação ja foi atualizada hoje
-                print('ult_cot.date(): ', ult_cot.date(), ' ult_at.date(): ',  ult_at.date(),
-                      '\nult_cot.date() > ult_at.date()', ult_cot.date() > ult_at.date())
                 if ult_cot.date() > ult_at.date():
                     print('''\
                     a cotação não foi atualizada. inserindo cotação e dividendyield para o db diario''')
