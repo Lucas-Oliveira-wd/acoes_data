@@ -164,10 +164,10 @@ empresa''')
                 result = mycursor.fetchall()
                 ult_cot_db = result[0][0]
                 if ult_cot_db == None: ## filtrando os None pq nao da para converter para tipo date
-                    ult_cot_db = datetime.datetime.strptime("1970-01-01", '%Y-%m-%d')
+                    ult_cot_db = datetime.datetime.strptime("1970-01-01", '%Y-%m-%d').date()
 
                 # verificando se já a cotação ja foi atualizada hoje
-                if ult_cot.date() > ult_cot_db.date():
+                if ult_cot.date() > ult_cot_db:
                     print('''\
 a cotação não foi atualizada. inserindo cotação e dividendyield para o db diario''')
                     sql = '''INSERT INTO acoesb3cot (ultCot ,cod, cotAtual, divYield) VALUES (%s, %s, %s, %s) '''
