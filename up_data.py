@@ -37,32 +37,9 @@ empresas = []
 for a in soup.findAll('span'):
 	element = a.find('a')
 	str_ind = a.text[4]
-	for i in range(6, 2, -1):  # começando do 6 até o 3 par dá prioridade as ações PN
+	for i in range(6, 2, -1):  # começando do 6 até o 3 para dar prioridade as ações PN
 		if str_ind == f'{i}' and len(a.text) == 5:  ## verificando se o codigo é de uma acao (o 5nt digito é 3-6)
  			empresas.append(a.text)
-lenght = len(empresas) - 1
-# retirando as repetidas
-for i in range(lenght, 0, -1):  ## como o tamanho da lista vai diminuir, o primeiro loop sera de traz pra frente
-	for j in range(lenght):  # o segundo loop será normal pois ele é limitado ao tamanho da lista,
-				#que pode mudar dentro do primeiro loop
-		if empresas[i][0:4] == empresas[j][0:4]:  # verificando se os 4 primeiros digitos sao iguais
-			if int(empresas[i][4]) > int(empresas[j][4]):  # só para ter certeza que está
-									#sendo removido o papel com menor 5to digito
-				empresas.remove(empresas[j])
-				lenght = len(empresas) - 1
-			elif int(empresas[i][4]) != int(empresas[j][4]):
-				empresas.remove(empresas[i])
-				lenght = len(empresas) - 1
-
-## Verificando se possuem empresas repetidas        ##  !!tentar fazer depos. melhorar a função de busca por ações
-# repetidas para que ela encontre os codigos com mesmo digito final
-for i in empresas:
-	cont = []
-	for j in range(6):
-		if empresas.count(i[0:4] + str(j)):
-			cont.append(i)
-			if len(cont) > 1:
-				print(f"existe papeis repetidos para a ação {cont}")
 
 mydb = mariadb.connect(
 	host="localhost",
@@ -72,6 +49,7 @@ mydb = mariadb.connect(
 )
 mycursor = mydb.cursor()
 
+insert_emp = [] #tuple para conter as empresas que ja foram registradas
 for emp in empresas:
 	stop_at = 365  ## variável para parar de atualizar os dados
 	v_dados = []  # List to store values of datas coletados do site
@@ -126,52 +104,57 @@ for emp in empresas:
 				'%Y-%m-%d')
 			dif = now.date() - ult_bal.date()  ## diferença entre o ultimo balanço e hoje
 			dif_last_cot = now.date() - ult_cot.date()  ## diferença entre a ultima cotação e hoje
+							# retirando as repetidas
 			if dif.days < stop_at and dif_last_cot.days < stop_at:  ##filtrando as empresa que nao
-				# atualizam seus dados a mais de que o tempo de stop_at
-				sql = f"SELECT MAX(ultBal) FROM acoesb3 WHERE codigo = '{emp}'"  ## buscando o
-				# ultimo balanço das empresas no db
-				mycursor.execute(sql)
-				result = mycursor.fetchall()
-				ult_bal_db = result[0][0]
-				if ult_bal_db != ult_bal.date():
-					sql = """INSERT INTO acoesb3 (setor, subSetor, empName, ultBal, codigo, cotAtual, roic, cresRec5a,
-					divYield, nAcoes, divBruta, disponib, ativCirc, ativos, patLiq, recLiq12m, ebit12m, LucLiq12m,
-					recLiq3m ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
-					## verficando se os dados estão corretos
-					val = (v_dados[13], v_dados[17], v_dados[9], datetime.datetime.strptime(
-						f'{v_dados[23][6:]}-{v_dados[23][3:5]}-{v_dados[23][0:2]}', '%Y-%m-%d').date(), emp,
-						converComTD(v_dados[3]), converComTD(v_dados[64]), converComTD(v_dados[82]),
-						converComTD(v_dados[67]), converComTD(v_dados[27]), converComTD(v_dados[89]),
-						converComTD(v_dados[91]), converComTD(v_dados[95]), converComTD(v_dados[87]),
-						converComTD(v_dados[97]), converComTD(v_dados[102]), converComTD(v_dados[106]),
-						converComTD(v_dados[110]), converComTD(v_dados[104])
-						)
-					mycursor.execute(sql, val)
-					mydb.commit()
-					print(mycursor.rowcount, f"record inserted. vales {val} on acoesb3")
-				if ult_bal_db == ult_bal.date():
-					print(f'''\
-{emp} não mudou desde o ultimo balaço processado. Portanto sem alterações feitas para os dados trimestrais dessa
-empresa''')
-				print('''analizando se a cotação já está atualizada''')
-				# verificando a data de ultima cotacão no db ultima atualização no db
-				sql = f"""SELECT MAX(ultCot) FROM acoesb3cot WHERE cod = '{emp}'"""
-				mycursor.execute(sql)
-				result = mycursor.fetchall()
-				ult_cot_db = result[0][0]
-				if ult_cot_db == None: ## filtrando os None pq nao da para converter para tipo date
-					ult_cot_db = datetime.datetime.strptime("1970-01-01", '%Y-%m-%d').date()
-
-				# verificando se a cotação ja foi atualizada hoje
-				if ult_cot.date() > ult_cot_db:
-					print('''\
-a cotação não foi atualizada. inserindo cotação e dividendyield para o db diario''')
-					sql = '''INSERT INTO acoesb3cot (ultCot ,cod, cotAtual, divYield) VALUES (%s, %s, %s, %s) '''
-					## verificando se os dados estão corretos
-					val = (ult_cot.date(), emp, converComTD(v_dados[3]), converComTD(v_dados[67]))
-					mycursor.execute(sql, val)
-					mydb.commit()
-					print(mycursor.rowcount, f"record inserted. values {val} on acoesb3cot")
+				                                        # atualizam seus dados a mais de que o tempo de stop_at
+				if insert_emp.count(emp[0:4]) > 0:
+					print(f"{emp} já foi registrada com outro papel")
 				else:
-					print(f'''\
-Não atualizando o preço para {emp}. Já está atualizado''')
+					insert_emp.append(emp[0:4])
+					sql = f"SELECT MAX(ultBal) FROM acoesb3 WHERE codigo = '{emp}'"  ## buscando o
+					# ultimo balanço das empresas no db
+					mycursor.execute(sql)
+					result = mycursor.fetchall()
+					ult_bal_db = result[0][0]
+					if ult_bal_db != ult_bal.date():
+						sql = """INSERT INTO acoesb3 (setor, subSetor, empName, ultBal, codigo, cotAtual, roic, cresRec5a,
+						divYield, nAcoes, divBruta, disponib, ativCirc, ativos, patLiq, recLiq12m, ebit12m, LucLiq12m,
+						recLiq3m ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+						## verficando se os dados estão corretos
+						val = (v_dados[13], v_dados[17], v_dados[9], datetime.datetime.strptime(
+							f'{v_dados[23][6:]}-{v_dados[23][3:5]}-{v_dados[23][0:2]}', '%Y-%m-%d').date(), emp,
+							converComTD(v_dados[3]), converComTD(v_dados[64]), converComTD(v_dados[82]),
+							converComTD(v_dados[67]), converComTD(v_dados[27]), converComTD(v_dados[89]),
+							converComTD(v_dados[91]), converComTD(v_dados[95]), converComTD(v_dados[87]),
+							converComTD(v_dados[97]), converComTD(v_dados[102]), converComTD(v_dados[106]),
+							converComTD(v_dados[110]), converComTD(v_dados[104])
+							)
+						mycursor.execute(sql, val)
+						mydb.commit()
+						print(mycursor.rowcount, f"record inserted. vales {val} on acoesb3")
+					if ult_bal_db == ult_bal.date():
+						print(f'''\
+	{emp} não mudou desde o ultimo balaço processado. Portanto sem alterações feitas para os dados trimestrais dessa
+	empresa''')
+					print('''analizando se a cotação já está atualizada''')
+					# verificando a data de ultima cotacão no db ultima atualização no db
+					sql = f"""SELECT MAX(ultCot) FROM acoesb3cot WHERE cod = '{emp}'"""
+					mycursor.execute(sql)
+					result = mycursor.fetchall()
+					ult_cot_db = result[0][0]
+					if ult_cot_db == None: ## filtrando os None pq nao da para converter para tipo date
+						ult_cot_db = datetime.datetime.strptime("1970-01-01", '%Y-%m-%d').date()
+
+					# verificando se a cotação ja foi atualizada hoje
+					if ult_cot.date() > ult_cot_db:
+						print('''\
+	a cotação não foi atualizada. inserindo cotação e dividendyield para o db diario''')
+						sql = '''INSERT INTO acoesb3cot (ultCot ,cod, cotAtual, divYield) VALUES (%s, %s, %s, %s) '''
+						## verificando se os dados estão corretos
+						val = (ult_cot.date(), emp, converComTD(v_dados[3]), converComTD(v_dados[67]))
+						mycursor.execute(sql, val)
+						mydb.commit()
+						print(mycursor.rowcount, f"record inserted. values {val} on acoesb3cot")
+					else:
+						print(f'''\
+	Não atualizando o preço para {emp}. Já está atualizado''')
