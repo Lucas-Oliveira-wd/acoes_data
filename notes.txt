@@ -1,0 +1,4 @@
+## algumas acoes 'pn' deixaram de ser atualizadas,
+mas a empresas continuam atualizando as 'on',
+e devido a formacão da lista de empresas darem preferencias as acoes 'pn',
+nao conseguimos contabilizar as acoes on no db diario
