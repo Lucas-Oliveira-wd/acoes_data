@@ -161,7 +161,6 @@ empresa''')
 				ult_cot_db = result[0][0]
 				if ult_cot_db == None: ## filtrando os None pq nao da para converter para tipo date
 					ult_cot_db = datetime.datetime.strptime("1970-01-01", '%Y-%m-%d').date()
-
 				# verificando se a cotação ja foi atualizada hoje
 				if ult_cot.date() > ult_cot_db:
 					print('''\
@@ -174,4 +173,25 @@ a cotação não foi atualizada. inserindo cotação e dividendyield para o db d
 					print(mycursor.rowcount, f"record inserted. values {val} on acoesb3cot")
 				else:
 					print(f'''\
+                print('''analizando se a cotação já está atualizada''')
+                # verificando a ultima atualização no db
+                sql = f"""SELECT MAX(ultCot) FROM acoesb3cot WHERE cod = '{emp}'"""
+                mycursor.execute(sql)
+                result = mycursor.fetchall()
+                ult_cot_db = result[0][0]
+                if ult_cot_db == None: ## filtrando os None pq nao da para converter para tipo date
+                    ult_cot_db = datetime.datetime.strptime("1970-01-01", '%Y-%m-%d').date()
+
+                # verificando se já a cotação ja foi atualizada hoje
+                if ult_cot.date() > ult_cot_db:
+                    print('''\
+a cotação não foi atualizada. inserindo cotação e dividendyield para o db diario''')
+                    sql = '''INSERT INTO acoesb3cot (ultCot ,cod, cotAtual, divYield) VALUES (%s, %s, %s, %s) '''
+                    ## verificando se os dados estão corretos
+                    val = (ult_cot.date(), emp, converComTD(v_dados[3]), converComTD(v_dados[67]))
+                    mycursor.execute(sql, val)
+                    mydb.commit()
+                    print(mycursor.rowcount, f"record inserted. values {val} on acoesb3cot")
+                else:
+                    print(f'''\
 Não atualizando o preço para {emp}. Já está atualizado''')
