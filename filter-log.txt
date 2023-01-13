@@ -1,0 +1,431 @@
+CSTB4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+[3552:1784:0113/160039.529:ERROR:cert_issuer_source_aia.cc(34)] Error parsing cert retrieved from AIA (as DER):
+ERROR: Couldn't read tbsCertificate as SEQUENCE
+ERROR: Failed parsing Certificate
+
+[3552:1784:0113/160039.772:ERROR:cert_issuer_source_aia.cc(34)] Error parsing cert retrieved from AIA (as DER):
+ERROR: Couldn't read tbsCertificate as SEQUENCE
+ERROR: Failed parsing Certificate
+
+MNSA4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+[3552:1784:0113/160052.954:ERROR:cert_issuer_source_aia.cc(34)] Error parsing cert retrieved from AIA (as DER):
+ERROR: Couldn't read tbsCertificate as SEQUENCE
+ERROR: Failed parsing Certificate
+
+CFLU4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+POPR4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+IVTT3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+PORP4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+PLDN4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+[3552:9176:0113/160113.895:ERROR:cert_issuer_source_aia.cc(34)] Error parsing cert retrieved from AIA (as DER):
+ERROR: Couldn't read tbsCertificate as SEQUENCE
+ERROR: Failed parsing Certificate
+
+LCSA4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+ONCO3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+RJCP3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+PITI4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+MAGG3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BNCA3 não passou no primeiro filtro; len(v_dados) > 110: False
+
+CSAB4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+MAPT4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+TOYB4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+CLAN4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+EBTP4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+FBRA4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BRTP4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+[9496:12020:0113/160216.044:ERROR:gpu_init.cc(523)] Passthrough is not supported, GL is disabled, ANGLE is
+ASTA4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+VGOR4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+CRBM3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+DFVA4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+TDBH4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+TRAD3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+LECO4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+SEDU3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+IGUA6 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+PRVI3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+CLSA3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+ECPR4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+IFCM3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+NINJ3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+KRSA3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+LFFE4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+ADHM3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+TLCP4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BECE4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+IRBR3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BICB4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+ARLA4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+LIXC4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+OGXP3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+VTLM3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BCAL6 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+DJON4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+SPRI6 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BLUT4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+IDVL4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+PMET6 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+LGLO4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+LETO5 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+CELM3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+REEM4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+CCXC3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+DOCA4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+MEND6 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+ARTE4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+TROR4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+TENE5 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BERG3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+SALM4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+CLSC6 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+CPFP4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+FIGE4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+VNET3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+SASG3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+REPA4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BMEF3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+CMMA4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+MSAN4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+AGEI3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+SUZA4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+JFAB4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+JBDU3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+TNEP4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+CCHI4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+OPCT3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+ICPI3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+ILLS4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+LATS3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+PTIP4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+GALO4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+ECIS4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BPNM3 não passou no primeiro filtro; len(v_dados) > 110: False
+
+VSPT4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+SCLO4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+LAND3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+CSPC4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BOVH3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+VVAX4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+ALBA3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BSGR3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+ARPS4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+SLCP3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+CAFE4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+MLPA4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+CBMA4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+SULT4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+ASSM4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+GAZO4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BELG4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+FCAP4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BNBR4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+TSPP4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+PLIM4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BRAP4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BAZA3 não passou no primeiro filtro; len(v_dados) > 110: False
+
+CTPC4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+DMFN3 não passou no primeiro filtro; len(v_dados) > 110: False
+
+BBAS3 não passou no primeiro filtro; len(v_dados) > 110: False
+
+PTPA4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+DAYC4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+CBAV3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BRSR6 não passou no primeiro filtro; len(v_dados) > 110: False
+
+BPIA3 não passou no primeiro filtro; len(v_dados) > 110: False
+
+ABCB4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+BMEB4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+BEES4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+MLAS3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BMGB4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+CIQU4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BBDC4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+BRIV4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+GETT4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+DPPI4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+CCTU4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+CMET4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+RDTR3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+SANB4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+ITUB4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+AELP3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BPAC5 não passou no primeiro filtro; len(v_dados) > 110: False
+
+CPSL3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BGIP4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+TTEN3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+CZRS4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+CRIV4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+CXSE3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BPAR3 não passou no primeiro filtro; len(v_dados) > 110: False
+
+CTWR3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+VIVO4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BPAN4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+BMIN4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+LVTC3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+TCOC4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+TRFO4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BESP4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+BSLI4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+GRNL4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+EBCO4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+FIQE3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+NAFG4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+RECV3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+MPLU3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BBSE3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+MEGA3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+DXTG4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+SFSA4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+ARCE3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+GGPS3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+TNCP4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+ELUM4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+PINE4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+DESK3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+CRTP5 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+PORT3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+VVEO3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BMTO4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BFIT4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+UCOP4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+SMLE3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+MERC4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+TMCP4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BSCT6 não passou no primeiro filtro; len(v_dados) > 110: False
+
+[3552:9176:0113/161319.044:ERROR:cert_issuer_source_aia.cc(34)] Error parsing cert retrieved from AIA (as DER):
+ERROR: Couldn't read tbsCertificate as SEQUENCE
+ERROR: Failed parsing Certificate
+
+TVIT3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+TMGC3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+POWE3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+TSEP4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+MAGS3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+MATD3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+CRUZ3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+TNLP4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+AMBV4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+RPSA4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+MODL4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+LIPR3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+MOSI3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BRIT3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+VIGR3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+RAIA3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+PTQS4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+PLTO6 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+GVTT3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+AURE3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+NATU3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+SUBA3 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+TMAR6 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+FLCL6 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+NETC4 não passou no segundo filtro "isCorr(valBefCheck) == 'correct': False
+
+BIDI4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+PRBC4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+UBBR4 não passou no primeiro filtro; len(v_dados) > 110: False
+
+
+C:\files\projects\programacao\python\acoes_data>
