@@ -25,6 +25,8 @@ def isCorr(dic):  ## função para verificar se os dados estão corretos
 			return j + ' is incorrect'  ## retornar o valor da variavel incorreta
 	else:
 		return 'correct'
+def last_letter(word):	## funcao para retornar o ultimo caractere de uma string
+    return word[::-1]
 
 driver = webdriver.Chrome("C:\Program Files\Google\Chrome\Application\chromedriver_win32\chromedriver.exe")
 
@@ -37,9 +39,9 @@ empresas = []
 for a in soup.findAll('span'):
 	element = a.find('a')
 	str_ind = a.text[4]
-	for i in range(6, 2, -1):  # começando do 6 até o 3 para dar prioridade as ações PN
-		if str_ind == f'{i}' and len(a.text) == 5:  ## verificando se o codigo é de uma acao (o 5nt digito é 3-6)
- 			empresas.append(a.text)
+	for i in range(3,7):
+		if str_ind == str(i) and len(a.text) == 5:  ## verificando se o codigo é de uma acao (o 5nt digito é 3-6)
+			empresas.append(a.text)
 
 mydb = mariadb.connect(
 	host="localhost",
@@ -50,7 +52,7 @@ mydb = mariadb.connect(
 mycursor = mydb.cursor()
 
 insert_emp = [] #tuple para conter as empresas que ja foram registradas
-for emp in empresas:
+for emp in sorted(empresas, key=last_letter, reverse = True): ## ordenando as empresas para dar preferencias as PN
 	stop_at = 365  ## variável para parar de atualizar os dados
 	v_dados = []  # List to store values of datas coletados do site
 	driver.get(f"https://fundamentus.com.br/detalhes.php?papel={emp}")  ## link que será pego para cada ação
@@ -107,9 +109,7 @@ for emp in empresas:
 							# retirando as repetidas
 			if dif.days < stop_at and dif_last_cot.days < stop_at:  ##filtrando as empresa que nao
 				                                        # atualizam seus dados a mais de que o tempo de stop_at
-				if insert_emp.count(emp[0:4]) > 0:
-					print(f"{emp} já foi registrada com outro papel")
-				else:
+				if insert_emp.count(emp[0:4]) == 0:
 					insert_emp.append(emp[0:4])
 					sql = f"SELECT MAX(ultBal) FROM acoesb3 WHERE codigo = '{emp}'"  ## buscando o
 					# ultimo balanço das empresas no db
