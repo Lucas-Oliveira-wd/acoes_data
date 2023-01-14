@@ -134,7 +134,7 @@ for emp in sorted(empresas, key=last_letter, reverse = True): ## ordenando as em
 						print(mycursor.rowcount, f"record inserted. vales {val} on acoesb3")
 					if ult_bal_db == ult_bal.date():
 						print(f'''\
-	{emp} não mudou desde o ultimo balaço processado. Portanto sem alterações feitas para os dados trimestrais dessa
+{emp} não mudou desde o ultimo balaço processado. Portanto sem alterações feitas para os dados trimestrais dessa
 	empresa''')
 					print('''analizando se a cotação já está atualizada''')
 					# verificando a data de ultima cotacão no db ultima atualização no db
@@ -148,7 +148,7 @@ for emp in sorted(empresas, key=last_letter, reverse = True): ## ordenando as em
 					# verificando se a cotação ja foi atualizada hoje
 					if ult_cot.date() > ult_cot_db:
 						print('''\
-	a cotação não foi atualizada. inserindo cotação e dividendyield para o db diario''')
+a cotação não foi atualizada. inserindo cotação e dividendyield para o db diario''')
 						sql = '''INSERT INTO acoesb3cot (ultCot ,cod, cotAtual, divYield) VALUES (%s, %s, %s, %s) '''
 						## verificando se os dados estão corretos
 						val = (ult_cot.date(), emp, converComTD(v_dados[3]), converComTD(v_dados[67]))
@@ -157,4 +157,4 @@ for emp in sorted(empresas, key=last_letter, reverse = True): ## ordenando as em
 						print(mycursor.rowcount, f"record inserted. values {val} on acoesb3cot")
 					else:
 						print(f'''\
-	Não atualizando o preço para {emp}. Já está atualizado''')
+Não atualizando o preço para {emp}. Já está atualizado''')
