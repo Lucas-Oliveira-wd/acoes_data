@@ -40,7 +40,7 @@ for a in soup.findAll('span'):
 	element = a.find('a')
 	str_ind = a.text[4]
 	for i in range(3,7):
-		if str_ind == str(i) and len(a.text) == 5:  ## verificando se o codigo é de uma acao (o 5nt digito é 3-6)
+		if str_ind == str(i) and 5 <= len(a.text) <= 6:  ## verificando se o codigo é de uma acao (o 5nt digito é 3-6)
 			empresas.append(a.text)
 
 mydb = mariadb.connect(
