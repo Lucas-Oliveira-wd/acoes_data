@@ -1,5 +1,5 @@
 import mariadb
-import datetime
+from datetime import datetime
 import pandas as pd
 
 mydb = mariadb.connect(
@@ -19,25 +19,24 @@ ult_bal = []
 for dat in result:
 	ult_bal.append(dat[0])
 
-pd.options.display.max_rows = 9999
+df_tri = pd.read_csv('data/acoesb3.csv')
 
-df = pd.read_csv('ref/acoesb3.csv')
-print(df.to_string())
+df_day = pd.read_csv('data/acoesb3cot.csv')
 
-'''
-sql = f"""\
-SELECT acoesb3.ultBal, acoesb3.codigo, acoesb3cot.cotAtual, acoesb3cot.divYield , acoesb3.roic, acoesb3.cresRec5a,\
-acoesb3.nAcoes,\
-acoesb3.divBruta, acoesb3.disponib,\
-acoesb3.ativCirc, acoesb3.ativos, acoesb3.patLiq, acoesb3.recLiq12m, acoesb3.ebit12m, \
-acoesb3.LucLiq12m, acoesb3.recLiq3m, acoesb3.ebit3m, acoesb3.LucLiq3m FROM acoesb3 INNER JOIN acoesb3cot ON \
-acoesb3.codigo=acoesb3cot.cod GROUP BY acoesb3cot.cod ORDER BY acoesb3.ultBal DESC
-"""
-dados = []
-mycursor.execute(sql)
-result = mycursor.fetchall()
-for row in result:
+print('dft: ', df_tri.to_string(),'\ndfd: ', df_day.to_string())
+
+## filtering rows form dfd
+f_data_d = []
+cod = []
+df_day_g = pd.DataFrame()
+for i in range(len(df_day['cod'])):
+	if cod.count(df_day['cod'][i]) == 0:
+		cod.append(df_day['cod'][i])
+
+		f_data_d.append([df_day['cod'][i], datetime.strptime(df_day['ultCot'][i], '%Y-%m-%d'), df_day['cotAtual'][i],
+						 df_day['divYield'][i]])
+
+	df_day_g = pd.DataFrame(f_data_d)
+for row in df_day_g:
 	print(row)
-
-print("len(result): ", len(result))
-'''
+print('len(f_data_d): ', len(f_data_d))
