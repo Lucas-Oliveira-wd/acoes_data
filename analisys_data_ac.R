@@ -195,3 +195,46 @@ for (r in 1:length(crit$ROE)){
 }
 
 length(crit[,1])
+
+boxplot(crit, outline = T, names = c("P/L", "P/VPA",
+                                     "ROE",
+                                     "ROIC",
+                                     "P/(Cx/A)", "P/(Ativ Circ/A)",
+                                     "P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT",
+                                     "Marg. Líq", "Cresc.Rec.5A",
+                                     "Dividendyield", "Lynch",
+                                     "Per.Res",
+                                     "Dív.Br/Luc Mens"))
+
+
+## Retirando max(marg. liq)
+
+row.names(crit)[match(max(crit$`Marg. Líquida`),crit$`Marg. Líquida`)]
+
+crit = crit[-match(max(crit$`Marg. Líquida`), crit$`Marg. Líquida`),]
+
+
+## retirando min(marg. ebitda)
+
+row.names(crit)[match(min(crit$`Mar. EBITDA`),crit$`Mar. EBITDA`)]
+
+crit = crit[-match(min(crit$`Mar. EBITDA`), crit$`Mar. EBITDA`),]
+
+## retirando max(div/lucm)
+
+row.names(crit)[match(max(crit$`Dív. Bruta/Lucro Mensal`),crit$`Dív. Bruta/Lucro Mensal`)]
+
+crit = crit[-match(max(crit$`Dív. Bruta/Lucro Mensal`), crit$`Dív. Bruta/Lucro Mensal`),]
+
+
+
+boxplot(crit, outline = T, names = c("P/L", "P/VPA",
+                                     "ROE",
+                                     "ROIC",
+                                     "P/(Cx/A)", "P/(Ativ Circ/A)",
+                                     "P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT",
+                                     "Marg. Líq", "Cresc.Rec.5A",
+                                     "Dividendyield", "Lynch",
+                                     "Per.Res",
+                                     "Dív.Br/Luc Mens") )
+
