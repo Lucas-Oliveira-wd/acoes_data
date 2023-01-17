@@ -1,7 +1,16 @@
-  df_tri = read.csv("data/acoesb3.csv")
-  
-  df_day = read.csv("data/acoesb3cot.csv")
-  ult_cot = cod = cotAtual = divY = c()
+
+library(tidyverse)
+library(gridExtra)
+
+
+df_tri = read.csv("data/acoesb3.csv")
+
+df_day = read.csv("data/acoesb3cot.csv")
+
+
+#gridExtra::grid.table(df_day %>% slice(1:20)) # para plotar o db
+
+ult_cot = cod = cotAtual = divY = c()
   
   for (i in 1:length(df_day[,"ultCot"])){
     if (df_day[i,"cod"] %in% cod){
@@ -25,8 +34,7 @@
     
   }
   df_day_fil = data.frame(cod, cotAtual, divY, ult_cot)
-  
-  head(df_tri,10)
+
   
   ult_bal = codigo = roic = cres_rec5 = n_ac = divb = disp = ativc = c();
   ativ = patl = recl12 = ebit12 = Lucl12 = recl3 = c()
@@ -70,8 +78,10 @@ for (i in length(df_tri[,"ultBal"])){
 
 df_tri_3t22 = data.frame(ult_cot_t, cotAtual_t, ult_bal, codigo, roic, cres_rec5,
                          divY_t, n_ac, divb, disp,
-                         ativc, ativ, patl, recl12, ebit12, Lucl12, recl3, row.names = codigo)
-head(df_tri_3t22,10)
+                         ativc, ativ, patl, recl12, ebit12, Lucl12, recl3,
+                         row.names = codigo)
+
+#gridExtra::grid.table(df_tri_3t22 %>% slice(1:20))
 
 
 pl = round(cotAtual_t/(Lucl12/n_ac), 2)
@@ -108,31 +118,80 @@ rmv_inf_values_row = function(df){
   return(df)
 }
 
-crit = rmv_inf_values_row(crit)
-
-sbs_out = function(vec){
-  dp = sd(vec)
-  media = mean(vec)
-  for (i in vec){
-    if (i > 3*dp + media){
-      print("if: ")
-      vec[match(i,vec)] = media + 3*dp
-    } else if (i < -3*dp + media){
-      vec[match(i,vec)] = media - 3*dp
-      print("else if: ")
+rmv_neg_pl = function(df){
+  for (r in 1:length(df[,match("P/L",colnames(df))])){
+    if (!is.na(df[r,match("P/L",colnames(df))])){
+      if (df[r,match("P/L",colnames(df))] < 0){
+        df = df[-r,]
+      }
     }
   }
-  return(vec)
+  return(df)
+}
+
+rmv_neg_pvpa = function(df){
+  for (r in 1:length(df[,match("P/VPA",colnames(df))])){
+    if (!is.na(df[r,match("P/VPA",colnames(df))])){
+      if (df[r,match("P/VPA",colnames(df))] < 0){
+        df = df[-r,]
+      }
+    }
+  }
+  return(df)
 }
 
 colnames(crit) = c("P/L", "P/VPA",
-           "ROE",
-           "ROIC",
-           "Preço/(Caixa/Ação)", "Preço/(Ativos Circulantes/Ação)",
-           "Preço/(Ativos/Ação)", "Dív Bruta/Caixa", "Mar. EBITDA",
-           "Marg. Líquida", "Cresc. Rec. (5 Anos)",
-           "Dividendyield", "Lynch",
-           "Per. Resistência",
-           "Dív. Bruta/Lucro Mensal")
+                   "ROE",
+                   "ROIC",
+                   "Preço/(Caixa/Ação)", "Preço/(Ativos Circulantes/Ação)",
+                   "Preço/(Ativos/Ação)", "Dív Bruta/Caixa", "Mar. EBITDA",
+                   "Marg. Líquida", "Cresc. Rec. (5 Anos)",
+                   "Dividendyield", "Lynch",
+                   "Per. Resistência",
+                   "Dív. Bruta/Lucro Mensal")
+
+crit = rmv_inf_values_row(crit)
+length(crit[,1])
+crit = rmv_neg_pl(crit)
+length(crit[,1])
+crit = rmv_neg_pvpa(crit)
+length(crit[,1])
+
+
+
+
+
+
+#gridExtra::grid.table(crit %>% slice(1:20))
 
 apply(crit, 2, shapiro.test)
+
+emp_lucpat_neg = c()
+for(r in 1:length(df_tri_3t22[,1])){
+  if(df_tri_3t22[r,'Lucl12'] < 0 && df_tri_3t22[r,'patl'] < 0){
+    emp_lucpat_neg = c(emp_lucpat_neg, df_tri_3t22[r, 'codigo'])
+    }
+}
+
+length(emp_lucpat_neg)
+roe_err = c()
+for (r in emp_lucpat_neg){
+  roe_err = c(roe_err,(df_tri_3t22[r,"Lucl12"]/df_tri_3t22[r,'patl'])*100)
+}
+
+emp_lucpat_neg[match(max(roe_err), roe_err)] ## empresa com o maior roe falso
+
+
+## retirando os roes falsos
+
+length(crit[,1])
+
+for (r in 1:length(crit$ROE)){
+  if (row.names(crit)[r] %in% emp_lucpat_neg){
+    print(row.names(crit)[r]) #empresa retirada (tinha passado pelos
+                              #2 filtros anteriores)
+    crit = crit[-r,]
+  }
+}
+
+length(crit[,1])

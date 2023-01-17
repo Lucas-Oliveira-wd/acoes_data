@@ -136,8 +136,8 @@ for emp in sorted(empresas, key=last_letter, reverse = True): ## ordenando as em
 						print(mycursor.rowcount, f"record inserted. vales {val} on acoesb3")
 					if ult_bal_db == ult_bal.date():
 						print(f'''\
-{emp} não mudou desde o ultimo balaço processado. Portanto sem alterações feitas para os dados trimestrais dessa
-	empresa''')
+{emp} não mudou desde o ultimo balaço processado. Portanto sem alterações feitas para os dados trimestrais dessa\
+empresa''')
 					print('''analizando se a cotação já está atualizada''')
 					# verificando a data de ultima cotacão no db ultima atualização no db
 					sql = f"""SELECT MAX(ultCot) FROM acoesb3cot WHERE cod = '{emp}'"""
