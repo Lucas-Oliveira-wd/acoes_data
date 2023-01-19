@@ -1,4 +1,3 @@
-
 library(tidyverse)
 library(gridExtra)
 
@@ -119,22 +118,39 @@ rmv_inf_values_row = function(df){
 }
 
 rmv_neg_pl = function(df){
-  for (r in 1:length(df[,match("P/L",colnames(df))])){
-    if (!is.na(df[r,match("P/L",colnames(df))])){
-      if (df[r,match("P/L",colnames(df))] < 0){
-        df = df[-r,]
+  pl_neg = c()
+  col_i = match("P/L",colnames(df))
+  len = length(df[,col_i])
+  for (r in 1:len){
+    if (!is.na(df[r,col_i])){
+      if (df[r,col_i] < 0){
+        pl_neg = c(pl_neg,(df[r,"P/L"]))
       }
+    }
+  }
+  
+  for (i in pl_neg) {
+    if (i %in% df[,col_i]){
+      df = df[-match(i,df[,col_i]),]
     }
   }
   return(df)
 }
 
 rmv_neg_pvpa = function(df){
-  for (r in 1:length(df[,match("P/VPA",colnames(df))])){
-    if (!is.na(df[r,match("P/VPA",colnames(df))])){
-      if (df[r,match("P/VPA",colnames(df))] < 0){
-        df = df[-r,]
+  pvpa_neg = c()
+  col_i = match("P/VPA",colnames(df))
+  len = length(df[,col_i])
+  for (r in 1:len){
+    if (!is.na(df[r,col_i])){
+      if (df[r,col_i] < 0){
+        pvpa_neg = c(pvpa_neg,df[r,"P/VPA"])
       }
+    }
+  }
+  for (i in pvpa_neg) {
+    if (i %in% df[,col_i]){
+      df = df[-match(i,df[,col_i]),]
     }
   }
   return(df)
@@ -156,10 +172,6 @@ crit = rmv_neg_pl(crit)
 length(crit[,1])
 crit = rmv_neg_pvpa(crit)
 length(crit[,1])
-
-
-
-
 
 
 #gridExtra::grid.table(crit %>% slice(1:20))
@@ -196,15 +208,10 @@ for (r in 1:length(crit$ROE)){
 
 length(crit[,1])
 
-boxplot(crit, outline = T, names = c("P/L", "P/VPA",
-                                     "ROE",
-                                     "ROIC",
-                                     "P/(Cx/A)", "P/(Ativ Circ/A)",
-                                     "P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT",
-                                     "Marg. Líq", "Cresc.Rec.5A",
-                                     "Dividendyield", "Lynch",
-                                     "Per.Res",
-                                     "Dív.Br/Luc Mens"))
+boxplot(names = c("P/L", "P/VPA", "ROE", "ROIC", "P/(Cx/A)", "P/(Ativ Circ/A)",
+                  "P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT", "Marg. Líq",
+                  "Cresc.Rec.5A", "Dividendyield", "Lynch", "Per.Res",
+                  "Dív.Br/Luc Mens"), crit, outline = T)
 
 
 ## Retirando max(marg. liq)
@@ -213,12 +220,22 @@ row.names(crit)[match(max(crit$`Marg. Líquida`),crit$`Marg. Líquida`)]
 
 crit = crit[-match(max(crit$`Marg. Líquida`), crit$`Marg. Líquida`),]
 
+boxplot(names = c("P/L", "P/VPA", "ROE", "ROIC", "P/(Cx/A)", "P/(Ativ Circ/A)",
+                  "P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT", "Marg. Líq",
+                  "Cresc.Rec.5A", "Dividendyield", "Lynch", "Per.Res",
+                  "Dív.Br/Luc Mens"), crit, outline = T)
+
 
 ## retirando min(marg. ebitda)
 
 row.names(crit)[match(min(crit$`Mar. EBITDA`),crit$`Mar. EBITDA`)]
 
 crit = crit[-match(min(crit$`Mar. EBITDA`), crit$`Mar. EBITDA`),]
+
+boxplot(names = c("P/L", "P/VPA", "ROE", "ROIC", "P/(Cx/A)", "P/(Ativ Circ/A)",
+                  "P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT", "Marg. Líq",
+                  "Cresc.Rec.5A", "Dividendyield", "Lynch", "Per.Res",
+                  "Dív.Br/Luc Mens"), crit, outline = T)
 
 ## retirando max(div/lucm)
 
@@ -228,13 +245,89 @@ crit = crit[-match(max(crit$`Dív. Bruta/Lucro Mensal`), crit$`Dív. Bruta/Lucro
 
 
 
-boxplot(crit, outline = T, names = c("P/L", "P/VPA",
-                                     "ROE",
-                                     "ROIC",
-                                     "P/(Cx/A)", "P/(Ativ Circ/A)",
-                                     "P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT",
-                                     "Marg. Líq", "Cresc.Rec.5A",
-                                     "Dividendyield", "Lynch",
-                                     "Per.Res",
-                                     "Dív.Br/Luc Mens") )
+boxplot(names = c("P/L", "P/VPA", "ROE", "ROIC", "P/(Cx/A)", "P/(Ativ Circ/A)",
+"P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT", "Marg. Líq", "Cresc.Rec.5A",
+"Dividendyield", "Lynch", "Per.Res", "Dív.Br/Luc Mens"), crit, outline = T)
 
+rmv_outl = function(df){
+  outlr = c()
+  outlc = c()
+  for (c in 1:length(df[1,])) {
+    for (r in 1:length(df[,c])){
+      q1p = (length(df[,c])+1)/4 ## regra 1
+        if (q1p%%1!=0){
+          if(q1p%%1%%0.5!=0){
+            q1p = round(q1p,0) ## regra 3
+            q1v = sort(df[,c])[q1p]
+          } else {
+            q1v = mean(sort(df[,c])[q1p-0.5],sort(df[,c])[q1p+0.5]) ## regra 2
+          }
+        }
+      q1v = sort(df[,c])[q1p]
+      q3p = 3*(length(df[,c])+1)/4 ## regra 1
+      if (q3p%%1!=0){
+        if(q3p%%1%%0.5!=0){
+          q3p = round(q3p,0) ## regra 3
+          q3v = sort(df[,c])[q3p]
+        } else {
+          q3v = mean(sort(df[,c])[q3p-0.5],sort(df[,c])[q3p+0.5]) ## regra 2
+        }
+      }
+      q3v = sort(df[,c])[q3p]
+      iqr = q3v - q1v
+      rang = 3
+      if (!is.na(df[r,c] - q3v > rang*iqr)&&!is.na(q1v - df[r,c] > rang*iqr)){
+        if (df[r,c] - q3v > rang*iqr || q1v - df[r,c] > rang*iqr){
+        outlr = c(outlr,row.names(df)[r])
+        print(row.names(df)[r])
+        outlc = c(outlc, colnames(df)[c])
+        print(colnames(df)[c])
+        print(df[r,c])
+        }
+      }
+    }
+  }
+  outlr_nrep = c()
+  for (i in 1:length(outlr)){
+    if (outlr[i] %in% outlr_nrep){
+      
+    } else{
+      outlr_nrep = c(outlr_nrep, outlr[i])
+    }
+  }
+  for (cod in outlr_nrep){
+    df = df[-match(cod, row.names(df)),]
+  }
+  return(df)
+}
+
+length(crit[,1])
+crit = rmv_outl(crit)
+length(crit[,1])
+
+crit = rmv_outl(crit)
+length(crit[,1])
+
+crit = rmv_outl(crit)
+length(crit[,1])
+
+crit = rmv_outl(crit)
+length(crit[,1])
+
+crit = rmv_outl(crit)
+length(crit[,1])
+
+
+boxplot(names = c("P/L", "P/VPA", "ROE", "ROIC", "P/(Cx/A)", "P/(Ativ Circ/A)",
+                  "P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT", "Marg. Líq",
+                  "Cresc.Rec.5A", "Dividendyield", "Lynch", "Per.Res",
+                  "Dív.Br/Luc Mens"), crit, outline = T, range = 3)
+
+
+nor = function(vec){
+  vecn = c()
+  for (i in vec){
+    vecn = c(vecn, (i - min(vec))/(max(vec)-min(vec)))
+  }
+  return(vecn)
+}
