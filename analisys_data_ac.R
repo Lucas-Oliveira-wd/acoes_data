@@ -211,7 +211,7 @@ length(crit[,1])
 boxplot(names = c("P/L", "P/VPA", "ROE", "ROIC", "P/(Cx/A)", "P/(Ativ Circ/A)",
                   "P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT", "Marg. Líq",
                   "Cresc.Rec.5A", "Dividendyield", "Lynch", "Per.Res",
-                  "Dív.Br/Luc Mens"), crit, outline = T)
+                  "Dív.Br/Luc Mens"), crit, outline = T, range = 40)
 
 
 ## Retirando max(marg. liq)
@@ -223,7 +223,7 @@ crit = crit[-match(max(crit$`Marg. Líquida`), crit$`Marg. Líquida`),]
 boxplot(names = c("P/L", "P/VPA", "ROE", "ROIC", "P/(Cx/A)", "P/(Ativ Circ/A)",
                   "P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT", "Marg. Líq",
                   "Cresc.Rec.5A", "Dividendyield", "Lynch", "Per.Res",
-                  "Dív.Br/Luc Mens"), crit, outline = T)
+                  "Dív.Br/Luc Mens"), crit, outline = T, range = 40)
 
 
 ## retirando min(marg. ebitda)
@@ -235,7 +235,7 @@ crit = crit[-match(min(crit$`Mar. EBITDA`), crit$`Mar. EBITDA`),]
 boxplot(names = c("P/L", "P/VPA", "ROE", "ROIC", "P/(Cx/A)", "P/(Ativ Circ/A)",
                   "P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT", "Marg. Líq",
                   "Cresc.Rec.5A", "Dividendyield", "Lynch", "Per.Res",
-                  "Dív.Br/Luc Mens"), crit, outline = T)
+                  "Dív.Br/Luc Mens"), crit, outline = T, range = 40)
 
 ## retirando max(div/lucm)
 
@@ -245,9 +245,10 @@ crit = crit[-match(max(crit$`Dív. Bruta/Lucro Mensal`), crit$`Dív. Bruta/Lucro
 
 
 
-boxplot(names = c("P/L", "P/VPA", "ROE", "ROIC", "P/(Cx/A)", "P/(Ativ Circ/A)",
-"P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT", "Marg. Líq", "Cresc.Rec.5A",
-"Dividendyield", "Lynch", "Per.Res", "Dív.Br/Luc Mens"), crit, outline = T)
+boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
+"p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
+"dy", "ly", "p.res", "div.b/luc.m"), crit, outline = T,
+range = 40)
 
 rmv_outl = function(df){
   outlr = c()
@@ -275,7 +276,7 @@ rmv_outl = function(df){
       }
       q3v = sort(df[,c])[q3p]
       iqr = q3v - q1v
-      rang = 3
+      rang = 20
       if (!is.na(df[r,c] - q3v > rang*iqr)&&!is.na(q1v - df[r,c] > rang*iqr)){
         if (df[r,c] - q3v > rang*iqr || q1v - df[r,c] > rang*iqr){
         outlr = c(outlr,row.names(df)[r])
@@ -321,7 +322,7 @@ length(crit[,1])
 boxplot(names = c("P/L", "P/VPA", "ROE", "ROIC", "P/(Cx/A)", "P/(Ativ Circ/A)",
                   "P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT", "Marg. Líq",
                   "Cresc.Rec.5A", "Dividendyield", "Lynch", "Per.Res",
-                  "Dív.Br/Luc Mens"), crit, outline = T, range = 3)
+                  "Dív.Br/Luc Mens"), crit, outline = T, range = 4)
 
 
 nor = function(vec){
