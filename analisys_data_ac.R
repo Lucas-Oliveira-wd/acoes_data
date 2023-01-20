@@ -80,6 +80,14 @@ df_tri_3t22 = data.frame(ult_cot_t, cotAtual_t, ult_bal, codigo, roic, cres_rec5
                          ativc, ativ, patl, recl12, ebit12, Lucl12, recl3,
                          row.names = codigo)
 
+for (c in 1:length(df_tri_3t22[1,])){
+  for (r in 1:length(df_tri_3t22[,1])){
+    if (df_tri_3t22[r,c]<0){
+      print(c(row.names(df_tri_3t22)[r],colnames(df_tri_3t22)[c]))
+    }
+  }
+}
+
 #gridExtra::grid.table(df_tri_3t22 %>% slice(1:20))
 
 
@@ -211,7 +219,7 @@ length(crit[,1])
 boxplot(names = c("P/L", "P/VPA", "ROE", "ROIC", "P/(Cx/A)", "P/(Ativ Circ/A)",
                   "P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT", "Marg. Líq",
                   "Cresc.Rec.5A", "Dividendyield", "Lynch", "Per.Res",
-                  "Dív.Br/Luc Mens"), crit, outline = T, range = 40)
+                  "Dív.Br/Luc Mens"), crit, outline = T, range = 5500)
 
 
 ## Retirando max(marg. liq)
@@ -223,7 +231,7 @@ crit = crit[-match(max(crit$`Marg. Líquida`), crit$`Marg. Líquida`),]
 boxplot(names = c("P/L", "P/VPA", "ROE", "ROIC", "P/(Cx/A)", "P/(Ativ Circ/A)",
                   "P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT", "Marg. Líq",
                   "Cresc.Rec.5A", "Dividendyield", "Lynch", "Per.Res",
-                  "Dív.Br/Luc Mens"), crit, outline = T, range = 40)
+                  "Dív.Br/Luc Mens"), crit, outline = T, range = 700)
 
 
 ## retirando min(marg. ebitda)
@@ -235,7 +243,7 @@ crit = crit[-match(min(crit$`Mar. EBITDA`), crit$`Mar. EBITDA`),]
 boxplot(names = c("P/L", "P/VPA", "ROE", "ROIC", "P/(Cx/A)", "P/(Ativ Circ/A)",
                   "P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT", "Marg. Líq",
                   "Cresc.Rec.5A", "Dividendyield", "Lynch", "Per.Res",
-                  "Dív.Br/Luc Mens"), crit, outline = T, range = 40)
+                  "Dív.Br/Luc Mens"), crit, outline = T, range = 100)
 
 ## retirando max(div/lucm)
 
