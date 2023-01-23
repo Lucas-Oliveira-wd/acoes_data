@@ -245,18 +245,66 @@ boxplot(names = c("P/L", "P/VPA", "ROE", "ROIC", "P/(Cx/A)", "P/(Ativ Circ/A)",
                   "Cresc.Rec.5A", "Dividendyield", "Lynch", "Per.Res",
                   "Dív.Br/Luc Mens"), crit, outline = T, range = 100)
 
-## retirando max(div/lucm)
+## retirando min(per/resist)
+
+row.names(crit)[match(min(crit$`Per. Resistência`),crit$`Per. Resistência`)]
+
+crit = crit[-match(min(crit$`Per. Resistência`), crit$`Per. Resistência`),]
+
+boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
+"p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
+"dy", "ly", "p.res", "div.b/luc.m"), crit, outline = T,
+range = 70)
+
+## retirando max(P/L)
+
+row.names(crit)[match(max(crit$`P/L`),crit$`P/L`)]
+
+crit = crit[-match(max(crit$`P/L`), crit$`P/L`),]
+
+boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
+                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
+                  "dy", "ly", "p.res", "div.b/luc.m"), crit, outline = T,
+        range = 50)
+
+## retirando max(Div/Lucm)
 
 row.names(crit)[match(max(crit$`Dív. Bruta/Lucro Mensal`),crit$`Dív. Bruta/Lucro Mensal`)]
 
 crit = crit[-match(max(crit$`Dív. Bruta/Lucro Mensal`), crit$`Dív. Bruta/Lucro Mensal`),]
 
+boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
+                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
+                  "dy", "ly", "p.res", "div.b/luc.m"), crit, outline = T,
+        range = 50)
 
+marg.l = crit$`Marg. Líquida`
+marg.l_rmv_max = c()
+for (i in sort(marg.l)){
+  if (i != max(marg.l)){
+    marg.l_rmv_max = c(marg.l_rmv_max,i)
+  }
+}
+rng_max_mrg_l_s = c(max(marg.l),max(marg.l_rmv_max))
+range(rng_max_mrg_l_s); range(marg.l_rmv_max)
+(range(rng_max_mrg_l_s)[2]-range(rng_max_mrg_l_s)[1])/(range(marg.l_rmv_max)[2]-range(marg.l_rmv_max)[1]) ## > 1
+
+## retirando max(marg.l)
+
+row.names(crit)[match(max(crit$`Marg. Líquida`),crit$`Marg. Líquida`)]
+
+crit = crit[-match(max(crit$`Marg. Líquida`), crit$`Marg. Líquida`),]
 
 boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-"p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-"dy", "ly", "p.res", "div.b/luc.m"), crit, outline = T,
-range = 40)
+                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
+                  "dy", "ly", "p.res", "div.b/luc.m"), crit, outline = T,
+        range = 26)
+
+boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
+                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
+                  "dy", "ly", "p.res", "div.b/luc.m"), crit, outline = T,
+        range = 1.5)
+
 
 rmv_outl = function(df){
   outlr = c()
