@@ -276,7 +276,7 @@ crit = crit[-match(max(crit$`Dív. Bruta/Lucro Mensal`), crit$`Dív. Bruta/Lucro
 boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
                   "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
                   "dy", "ly", "p.res", "div.b/luc.m"), crit, outline = T,
-        range = 50)
+        range = 30)
 
 marg.l = crit$`Marg. Líquida`
 marg.l_rmv_max = c()
@@ -306,85 +306,26 @@ boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
         range = 1.5)
 
 
-rmv_outl = function(df){
-  outlr = c()
-  outlc = c()
-  for (c in 1:length(df[1,])) {
-    for (r in 1:length(df[,c])){
-      q1p = (length(df[,c])+1)/4 ## regra 1
-        if (q1p%%1!=0){
-          if(q1p%%1%%0.5!=0){
-            q1p = round(q1p,0) ## regra 3
-            q1v = sort(df[,c])[q1p]
-          } else {
-            q1v = mean(sort(df[,c])[q1p-0.5],sort(df[,c])[q1p+0.5]) ## regra 2
-          }
-        }
-      q1v = sort(df[,c])[q1p]
-      q3p = 3*(length(df[,c])+1)/4 ## regra 1
-      if (q3p%%1!=0){
-        if(q3p%%1%%0.5!=0){
-          q3p = round(q3p,0) ## regra 3
-          q3v = sort(df[,c])[q3p]
-        } else {
-          q3v = mean(sort(df[,c])[q3p-0.5],sort(df[,c])[q3p+0.5]) ## regra 2
-        }
-      }
-      q3v = sort(df[,c])[q3p]
-      iqr = q3v - q1v
-      rang = 20
-      if (!is.na(df[r,c] - q3v > rang*iqr)&&!is.na(q1v - df[r,c] > rang*iqr)){
-        if (df[r,c] - q3v > rang*iqr || q1v - df[r,c] > rang*iqr){
-        outlr = c(outlr,row.names(df)[r])
-        print(row.names(df)[r])
-        outlc = c(outlc, colnames(df)[c])
-        print(colnames(df)[c])
-        print(df[r,c])
-        }
-      }
-    }
-  }
-  outlr_nrep = c()
-  for (i in 1:length(outlr)){
-    if (outlr[i] %in% outlr_nrep){
-      
-    } else{
-      outlr_nrep = c(outlr_nrep, outlr[i])
-    }
-  }
-  for (cod in outlr_nrep){
-    df = df[-match(cod, row.names(df)),]
-  }
-  return(df)
-}
-
-length(crit[,1])
-crit = rmv_outl(crit)
-length(crit[,1])
-
-crit = rmv_outl(crit)
-length(crit[,1])
-
-crit = rmv_outl(crit)
-length(crit[,1])
-
-crit = rmv_outl(crit)
-length(crit[,1])
-
-crit = rmv_outl(crit)
-length(crit[,1])
-
-
-boxplot(names = c("P/L", "P/VPA", "ROE", "ROIC", "P/(Cx/A)", "P/(Ativ Circ/A)",
-                  "P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT", "Marg. Líq",
-                  "Cresc.Rec.5A", "Dividendyield", "Lynch", "Per.Res",
-                  "Dív.Br/Luc Mens"), crit, outline = T, range = 4)
-
-
-nor = function(vec){
+norm = function(vec){
   vecn = c()
   for (i in vec){
     vecn = c(vecn, (i - min(vec))/(max(vec)-min(vec)))
   }
   return(vecn)
 }
+
+v_ag = c()
+for (i in 1:length(crit[,1])){
+  v_ag[i] = -norm(crit$`P/L`)[i] -norm(crit$`P/VPA`)[i] +norm(crit$ROE)[i]
+  +norm(crit$ROIC)[i]
+  -norm(crit$`Preço/(Caixa/Ação)`)[i]
+  -norm(crit$`Preço/(Ativos Circulantes/Ação)`)[i]
+  -norm(crit$`Preço/(Ativos/Ação)`)[i] -norm(crit$`Dív Bruta/Caixa`)[i]
+  +norm(crit$`Mar. EBITDA`)[i] +norm(crit$`Marg. Líquida`)[i]
+  +norm(crit$`Cresc. Rec. (5 Anos)`)[i]
+  +norm(crit$Dividendyield)[i] +norm(crit$Lynch)[i]
+  +norm(crit$`Per. Resistência`)[i]
+  -norm(crit$`Dív. Bruta/Lucro Mensal`)[i]
+}
+
+result = data.frame(v_ag, row.names = row.names(crit))
