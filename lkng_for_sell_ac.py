@@ -1,9 +1,11 @@
+import datetime
 import pandas as pd # Para evitar escrever pandas e trocar pela escrita apenas de pd para facilitar
 from pandas_datareader import data as web # Evita a escrita do data e troca pelo web
 import time
 import smtplib, ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import mariadb
 
 def verMinDate(date,vals): ## função para retornar a date que ocorreu o valor minimo
     for i in range(len(vals)):
@@ -11,11 +13,12 @@ def verMinDate(date,vals): ## função para retornar a date que ocorreu o valor 
             return date[i]
 
 data_final = time.strftime('%m-%d-%y', time.localtime(time.time()))
-##  criando a data inicial (3 meses)
+##  criando a data inicial (12 meses)
 one_day = 60*60*24
 interval = 12 ## intervalo de tempo em meses
 
 data_inicial = time.strftime('%m-%d-%y', time.localtime(time.time()-interval*30*one_day))
+data_inicial = datetime.datetime.strptime(data_inicial, '%m-%d-%y').date()  ##definindo a data inicial
 
 msg_aval_since = """\
 Procurando por uma janela de oportunidade de venda para as empresas da planilha 'participacao.xlsx'.
@@ -25,20 +28,41 @@ print(msg_aval_since.format(data_inicial))
 
 empresas_df = ('ENAT3', 'CTSA4', 'CSNA3', 'GPIV33', 'TRPL4', 'CRPG6', 'PETR4', 'BRSR6')
 
-for empresa in empresas_df:
-    df = web.DataReader(f'{empresa}.SA', data_source='yahoo', start=data_inicial, end=data_final)
+#conectando com o banco de dados
+mydb = mariadb.connect(
+	host="localhost",
+	user="root",
+	password=None,
+	database="invest"
+)
+mycursor = mydb.cursor()
 
-    var = ((df["Adj Close"][len(df["Adj Close"])-1]) - min(df["Adj Close"]))/min(df["Adj Close"])
+for empresa in empresas_df:
+
+    # montando a lista para conter os dados da empresa
+    sql = f"SELECT cotAtual, ultCot FROM acoesb3cot WHERE cod = '{empresa}' ORDER BY ultCot"  ## buscando o
+    # ultimo balanço das empresas no db
+    mycursor.execute(sql)
+    result = mycursor.fetchall()
+    cot_dados = []  # para conter os dados das cotações
+    if result == []:  ##verificando se os resultados estão vazio (ação de banco)
+        sql = f"SELECT cotAtual, ultCot FROM bankcot WHERE cod = '{empresa}' ORDER BY ultCot"  ## se for banco, precisar ir no bankcot
+        mycursor.execute(sql)
+        result = mycursor.fetchall()
+        for i in result:
+            if i[1] >= data_inicial:  # filtrando as datas acima da inicial
+                cot_dados.append(i)
+    else:  # se nao for ação de banco
+        for i in result:
+            if i[1] >= data_inicial:  # filtrando as datas acima da inicial
+                cot_dados.append(i)
+
+    df = pd.DataFrame(cot_dados, columns=('cotacao', 'data'))  # defininco o data frame
+    if len(df['cotacao']) > 1:  # verificando se tem pelo menos mais de 2 valores para a cotação
+        var = ((df['cotacao'].iloc[len(df['cotacao']) - 1]) - min(df['cotacao'])) / min(df['cotacao'])
+
     wind = 1 # valor para janela de oportunidade
 
-    dates = [] ## para conter as datas
-    vals = []  ## para conter os valores
-
-    for i in df.index:
-        dates.append(i)
-    for i in df["Adj Close"]:
-        vals.append(i)
-    
     if var > wind:
 
         sender_email = "emailautomatico11@gmail.com"     # Enter your address
@@ -54,8 +78,8 @@ for empresa in empresas_df:
         Há uma janela de oportunidade de venda para {0}. A acao subiu mais de {1} % nos últimos {2} meses
         """
 
-        text = msg.format(empresa, round(min(df["Adj Close"]), 2), str(verMinDate(dates,vals))[0:10],
-                          round(df["Adj Close"][len(df["Adj Close"])-1], 2), round(var*100,2))
+        text = msg.format(empresa, round(min(df["cotacao"]), 2), str(verMinDate(df['data'], df['cotacao']))[0:10],
+                          round(df["cotacao"].iloc[len(df["cotacao"])-1], 2), round(-var*100,2))
 
         msg = """\
         <html>
@@ -72,8 +96,8 @@ for empresa in empresas_df:
         </html>
         """
 
-        html = msg.format(empresa, round(min(df["Adj Close"]), 2), str(verMinDate(dates,vals))[0:10],
-                          round(df["Adj Close"][len(df["Adj Close"])-1], 2), round(var*100,2))
+        html = msg.format(empresa, round(min(df["cotacao"]), 2), str(verMinDate(df['data'], df['cotacao']))[0:10],
+                          round(df["cotacao"].iloc[len(df["cotacao"])-1], 2), round(-var*100,2))
 
         # Turn these into plain/html MIMEText objects
         part1 = MIMEText(text, "plain")

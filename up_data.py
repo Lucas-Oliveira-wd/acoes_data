@@ -58,7 +58,7 @@ for emp in sorted(empresas, key=last_letter, reverse = True): ## ordenando as em
 	driver.get(f"https://fundamentus.com.br/detalhes.php?papel={emp}")  ## link que será pego para cada ação
 	content = driver.page_source
 	soup = BeautifulSoup(content)
-	for a in soup.findAll('td'):  ## elementos da tabela ue contém os valores
+	for a in soup.findAll('td'):  ## elementos da tabela que contém os valores
 		element = a.find('span', attrs={'class': 'txt'})  ## os valores estao dentro de <span>
 		if hasattr(element, 'text'):  ## checando se os elementos tem o atributo txt
 			v_dados.append(element.text)  ## adicionando os dados e um dicionario

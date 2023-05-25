@@ -1,5 +1,6 @@
 library(tidyverse)
 library(gridExtra)
+library(ggplot2)
 
 
 df_tri = read.csv("data/acoesb3.csv")
@@ -40,7 +41,7 @@ ult_cot = cod = cotAtual = divY = c()
   
   ult_cot_t = cotAtual_t = divY_t = c()
   for (i in 1:length(df_tri[,"ultBal"])){
-    if (df_tri[i,"ultBal"] == "2022-09-30"){
+    if (df_tri[i,"ultBal"] == "2023-03-31"){
       j = match(df_tri[i,"codigo"], cod)
       ult_cot_t = c(ult_cot_t, ult_cot[j])
       cotAtual_t = c(cotAtual_t, cotAtual[j])
@@ -80,13 +81,6 @@ df_tri_3t22 = data.frame(ult_cot_t, cotAtual_t, ult_bal, codigo, roic, cres_rec5
                          ativc, ativ, patl, recl12, ebit12, Lucl12, recl3,
                          row.names = codigo)
 
-for (c in 1:length(df_tri_3t22[1,])){
-  for (r in 1:length(df_tri_3t22[,1])){
-    if (df_tri_3t22[r,c]<0){
-      print(c(row.names(df_tri_3t22)[r],colnames(df_tri_3t22)[c]))
-    }
-  }
-}
 
 #gridExtra::grid.table(df_tri_3t22 %>% slice(1:20))
 
@@ -172,9 +166,17 @@ colnames(crit) = c("P/L", "P/VPA",
                    "Dividendyield", "Lynch",
                    "Dív. Bruta/Lucro Mensal")
 
+
 crit = rmv_inf_values_row(crit)
+
 length(crit[,1])
+
+boxplot(crit$`P/L`, range = 3, horizontal = T)
+
 crit = rmv_neg_pl(crit)
+
+boxplot(crit$`P/L`, range = 3, horizontal = T)
+
 length(crit[,1])
 crit = rmv_neg_pvpa(crit)
 length(crit[,1])
@@ -182,7 +184,43 @@ length(crit[,1])
 
 #gridExtra::grid.table(crit %>% slice(1:20))
 
+## aplicando teste de normalidade
 apply(crit, 2, shapiro.test)
+
+## verificando os fluxogramas densidade
+d = density(crit$`P/L`)
+plot(d, main = "Densidade do P/L")
+polygon(d, col = "#5577ff", border = "white")
+
+d = density(crit$`P/VPA`)
+plot(d, main = "Densidade do P/VPA")
+polygon(d, col = "#ffcccc", border = "black")
+
+d = density(crit$ROE)
+plot(d, main = "Densidade do ROE")
+polygon(d, col = "#00cccc", border = "black")
+
+d = density(crit$ROIC)
+plot(d, main = "Densidade do ROIC")
+polygon(d, col = "#cccccc", border = "black")
+
+d = density(crit$`Preço/(Caixa/Ação)`)
+plot(d, main = "Densidade do P/Cx")
+polygon(d, col = "#ccccff", border = "black")
+
+d = density(crit$`Preço/(Ativos Circulantes/Ação)`)
+plot(d, main = "Densidade do P/AtC")
+polygon(d, col = "#ccff00", border = "black")
+
+d = density(crit$`Preço/(Ativos/Ação)`)
+plot(d, main = "Densidade do P/At")
+polygon(d, col = "#005500", border = "white")
+
+d = density(crit$`Dív Bruta/Caixa`)
+plot(d, main = "Densidade do DivB/Cx")
+polygon(d, col = "#aa0022", border = "black")
+
+
 
 emp_lucpat_neg = c()
 for(r in 1:length(df_tri_3t22[,1])){
@@ -217,7 +255,7 @@ length(crit[,1])
 boxplot(names = c("P/L", "P/VPA", "ROE", "ROIC", "P/(Cx/A)", "P/(Ativ Circ/A)",
                   "P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT", "Marg. Líq",
                   "Cresc.Rec.5A", "Dividendyield", "Lynch",
-                  "Dív.Br/Luc Mens"), crit, outline = T, range = 5500)
+                  "Dív.Br/Luc Mens"), crit, outline = T, range = 1.5)
 
 
 ## Retirando max(marg. liq)
@@ -263,7 +301,7 @@ crit = crit[-match(max(crit$`Dív. Bruta/Lucro Mensal`), crit$`Dív. Bruta/Lucro
 boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
                   "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
                   "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 30)
+        range = 3)
 
 marg.l = crit$`Marg. Líquida`
 marg.l_rmv_max = c()
@@ -277,407 +315,18 @@ range(rng_max_mrg_l_s); range(marg.l_rmv_max)
 (range(rng_max_mrg_l_s)[2]-range(rng_max_mrg_l_s)[1])/(range(marg.l_rmv_max)[2]-range(marg.l_rmv_max)[1]) ## > 1
 
 ## retirando max(marg.l)
+#
+#row.names(crit)[match(max(crit$`Marg. Líquida`),crit$`Marg. Líquida`)]
+#
+#crit = crit[-match(max(crit$`Marg. Líquida`), crit$`Marg. Líquida`),]
+#
+#boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
+#                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
+#                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
+#        range = 26)
 
-row.names(crit)[match(max(crit$`Marg. Líquida`),crit$`Marg. Líquida`)]
 
-crit = crit[-match(max(crit$`Marg. Líquida`), crit$`Marg. Líquida`),]
 
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 26)
-
-## retirando max(P/L)
-
-row.names(crit)[match(max(crit$`P/L`),crit$`P/L`)]
-
-crit = crit[-match(max(crit$`P/L`), crit$`P/L`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 23)
-
-## retirando max(P/cxa)
-
-row.names(crit)[match(max(crit$`Preço/(Caixa/Ação)`),crit$`Preço/(Caixa/Ação)`)]
-
-crit = crit[-match(max(crit$`Preço/(Caixa/Ação)`), crit$`Preço/(Caixa/Ação)`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 22)
-
-## retirando max(P/L)
-
-row.names(crit)[match(max(crit$`P/L`),crit$`P/L`)]
-
-crit = crit[-match(max(crit$`P/L`), crit$`P/L`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 21.725)
-
-## retirando max(ly)
-
-row.names(crit)[match(max(crit$Lynch),crit$Lynch)]
-
-crit = crit[-match(max(crit$Lynch), crit$Lynch),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 21)
-
-## retirando max(P/L)
-
-row.names(crit)[match(max(crit$`P/L`),crit$`P/L`)]
-
-crit = crit[-match(max(crit$`P/L`), crit$`P/L`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 20)
-
-## retirando max(ly)
-
-row.names(crit)[match(max(crit$Lynch),crit$Lynch)]
-
-crit = crit[-match(max(crit$Lynch), crit$Lynch),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 19)
-
-## retirando max(ly)
-
-row.names(crit)[match(max(crit$Lynch),crit$Lynch)]
-
-crit = crit[-match(max(crit$Lynch), crit$Lynch),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 17.5)
-
-## retirando max(cres.rec)
-
-row.names(crit)[match(max(crit$`Cresc. Rec. (5 Anos)`), crit$`Cresc. Rec. (5 Anos)`)]
-
-crit = crit[-match(max(crit$`Cresc. Rec. (5 Anos)`), crit$`Cresc. Rec. (5 Anos)`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 16)
-
-
-## retirando max(marg.l)
-
-row.names(crit)[match(max(crit$`Marg. Líquida`),crit$`Marg. Líquida`)]
-
-crit = crit[-match(max(crit$`Marg. Líquida`), crit$`Marg. Líquida`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 15)
-
-
-## retirando max(P/cx)
-
-row.names(crit)[match(max(crit$`Preço/(Caixa/Ação)`),crit$`Preço/(Caixa/Ação)`)]
-
-crit = crit[-match(max(crit$`Preço/(Caixa/Ação)`), crit$`Preço/(Caixa/Ação)`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 12.5)
-
-
-## retirando max(marg.ebit)
-
-row.names(crit)[match(max(crit$`Mar. EBITDA`),crit$`Mar. EBITDA`)]
-
-crit = crit[-match(max(crit$`Mar. EBITDA`), crit$`Mar. EBITDA`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 12.5)
-
-
-## retirando max(marg.liq)
-
-row.names(crit)[match(max(crit$`Marg. Líquida`),crit$`Marg. Líquida`)]
-
-crit = crit[-match(max(crit$`Marg. Líquida`), crit$`Marg. Líquida`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 12)
-
-## retirando max(cres.rec)
-
-row.names(crit)[match(max(crit$`Cresc. Rec. (5 Anos)`), crit$`Cresc. Rec. (5 Anos)`)]
-
-crit = crit[-match(max(crit$`Cresc. Rec. (5 Anos)`), crit$`Cresc. Rec. (5 Anos)`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 11)
-
-## retirando max(pv)
-
-row.names(crit)[match(max(crit$`P/VPA`), crit$`P/VPA`)]
-
-crit = crit[-match(max(crit$`P/VPA`), crit$`P/VPA`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 10)
-
-## retirando max(Div/Lucm)
-
-row.names(crit)[match(max(crit$`Dív. Bruta/Lucro Mensal`),crit$`Dív. Bruta/Lucro Mensal`)]
-
-crit = crit[-match(max(crit$`Dív. Bruta/Lucro Mensal`), crit$`Dív. Bruta/Lucro Mensal`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 9)
-
-
-## retirando max(marg.liq)
-
-row.names(crit)[match(max(crit$`Marg. Líquida`),crit$`Marg. Líquida`)]
-
-crit = crit[-match(max(crit$`Marg. Líquida`), crit$`Marg. Líquida`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 9.15)
-
-
-## retirando max(pv)
-
-row.names(crit)[match(max(crit$`P/VPA`), crit$`P/VPA`)]
-
-crit = crit[-match(max(crit$`P/VPA`), crit$`P/VPA`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 9.15)
-
-## retirando max(Div/Lucm)
-
-row.names(crit)[match(max(crit$`Dív. Bruta/Lucro Mensal`),crit$`Dív. Bruta/Lucro Mensal`)]
-
-crit = crit[-match(max(crit$`Dív. Bruta/Lucro Mensal`), crit$`Dív. Bruta/Lucro Mensal`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 9.15)
-
-## retirando max(Div/Lucm)
-
-row.names(crit)[match(max(crit$`Dív. Bruta/Lucro Mensal`),crit$`Dív. Bruta/Lucro Mensal`)]
-
-crit = crit[-match(max(crit$`Dív. Bruta/Lucro Mensal`), crit$`Dív. Bruta/Lucro Mensal`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 8)
-
-## retirando max(P/L)
-
-row.names(crit)[match(max(crit$`P/L`),crit$`P/L`)]
-
-crit = crit[-match(max(crit$`P/L`), crit$`P/L`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 7.85)
-
-## retirando max(P/ativ)
-
-row.names(crit)[match(max(crit$`Preço/(Ativos/Ação)`),crit$`Preço/(Ativos/Ação)`)]
-
-crit = crit[-match(max(crit$`Preço/(Ativos/Ação)`), crit$`Preço/(Ativos/Ação)`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 7.5)
-
-## retirando max(marg.liq)
-
-row.names(crit)[match(max(crit$`Marg. Líquida`),crit$`Marg. Líquida`)]
-
-crit = crit[-match(max(crit$`Marg. Líquida`), crit$`Marg. Líquida`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 7.15)
-
-## retirando max(P/ativc)
-
-row.names(crit)[match(max(crit$`Preço/(Ativos Circulantes/Ação)`),
-                      crit$`Preço/(Ativos Circulantes/Ação)`)]
-
-crit = crit[-match(max(crit$`Preço/(Ativos Circulantes/Ação)`),
-                   crit$`Preço/(Ativos Circulantes/Ação)`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 6.75)
-
-## retirando max(Div/Lucm)
-
-row.names(crit)[match(max(crit$`Dív. Bruta/Lucro Mensal`),crit$`Dív. Bruta/Lucro Mensal`)]
-
-crit = crit[-match(max(crit$`Dív. Bruta/Lucro Mensal`), crit$`Dív. Bruta/Lucro Mensal`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 6.5)
-
-## retirando max(pv)
-
-row.names(crit)[match(max(crit$`P/VPA`), crit$`P/VPA`)]
-
-crit = crit[-match(max(crit$`P/VPA`), crit$`P/VPA`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 6.5)
-
-## retirando max(P/cx)
-
-row.names(crit)[match(max(crit$`Preço/(Caixa/Ação)`),crit$`Preço/(Caixa/Ação)`)]
-
-crit = crit[-match(max(crit$`Preço/(Caixa/Ação)`), crit$`Preço/(Caixa/Ação)`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 6)
-
-## retirando max(roic)
-
-row.names(crit)[match(max(crit$ROIC),crit$ROIC)]
-
-crit = crit[-match(max(crit$ROIC), crit$ROIC),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 5.495)
-
-## retirando max(cres.rec)
-
-row.names(crit)[match(max(crit$`Cresc. Rec. (5 Anos)`), crit$`Cresc. Rec. (5 Anos)`)]
-
-crit = crit[-match(max(crit$`Cresc. Rec. (5 Anos)`), crit$`Cresc. Rec. (5 Anos)`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 5.4)
-
-## retirando max(P/cx)
-
-row.names(crit)[match(max(crit$`Preço/(Caixa/Ação)`),crit$`Preço/(Caixa/Ação)`)]
-
-crit = crit[-match(max(crit$`Preço/(Caixa/Ação)`), crit$`Preço/(Caixa/Ação)`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 5.2)
-
-## retirando max(dy)
-
-row.names(crit)[match(max(crit$Dividendyield),crit$Dividendyield)]
-
-crit = crit[-match(max(crit$Dividendyield), crit$Dividendyield),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 5.1)
-
-## retirando max(marg.liq)
-
-row.names(crit)[match(max(crit$`Marg. Líquida`),crit$`Marg. Líquida`)]
-
-crit = crit[-match(max(crit$`Marg. Líquida`), crit$`Marg. Líquida`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 5)
-
-## retirando max(P/cx)
-
-row.names(crit)[match(max(crit$`Preço/(Caixa/Ação)`),crit$`Preço/(Caixa/Ação)`)]
-
-crit = crit[-match(max(crit$`Preço/(Caixa/Ação)`), crit$`Preço/(Caixa/Ação)`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 5)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 1.5)
 
 
 norm = function(vec){
