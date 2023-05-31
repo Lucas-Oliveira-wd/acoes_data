@@ -1,30 +1,82 @@
 library(tidyverse)
 library(gridExtra)
 library(ggplot2)
-
+library(readxl)
 
 df_tri = read.csv("data/acoesb3.csv")
 
 df_day = read.csv("data/acoesb3cot.csv")
 
 
+#coletando as datas dos últimos balanços  
+ult_bal_dates = c()
+for (i in df_tri[,"ultBal"]){
+  if (i %in% ult_bal_dates){}
+  else{
+    ult_bal_dates = c(ult_bal_dates, i)
+  }
+}
+
+#retirando os valores das empresas que tem os trimestres vigentes diferentes
+#de 31/03, 30/06, 30/09 e 31/12
+for (t in ult_bal_dates) {
+  if (endsWith(t, '03-31')){} else if(endsWith(t, '06-30')){}
+  else if(endsWith(t, '09-30')){} else if(endsWith(t, '12-31')){}else {
+    ult_bal_dates = ult_bal_dates[-match(t, ult_bal_dates)]
+  }
+}
+
 #gridExtra::grid.table(df_day %>% slice(1:20)) # para plotar o db
 
-ult_cot = cod = cotAtual = divY = c()
+################################################################################
+############      CRIANDO OS DFs DIÁRIOS     ###################################
+################################################################################
+
+#separando os df por períodos
+
+#lista para conter os períodos
+trimestres = list()
+
+#lista para conter os critérios por períodos
+crit_tri = list()
+
+#criando os valores dos critérios
+for (per in 1:length(ult_bal_dates)){
+  print(paste('Criando o DF para o periodo: ', ult_bal_dates[per]))
   
-  for (i in 1:length(df_day[,"ultCot"])){
+  #criando as variaveis do db diário
+  
+  ult_cot = cod = cotAtual = divY = c()
+  
+  # loop na coluna 'ultCot' do dbday
+  for (i in 1:nrow(df_day)){
+    
+    # verificando se o codigo da ação já pertence a coluna do periodo df cod    
     if (df_day[i,"cod"] %in% cod){
+      
+      # obtendo o número da posição desse código na varável cod
       j = match(df_day[i,"cod"], cod)
-        if (df_day[i,"ultCot"]>df_day[j,"ultCot"]){
-          ult_cot = ult_cot[-j]; cod = cod[-j]; cotAtual = cotAtual[-j];
-          divY = divY[-j]
-          
-          ult_cot = c(ult_cot, df_day[i,"ultCot"])
-          cod = c(cod, df_day[i,"cod"])
-          cotAtual = c(cotAtual, df_day[i,"cotAtual"])
-          divY = c(divY, df_day[i, "divYield"])
-        }
-    } else {
+      
+      # verificando se o valor da ultima cotação da iteração atual é maior que
+      #o valor pertencente à variável e menor ou igual a do período
+      if (as.Date(df_day[i,"ultCot"]) > as.Date(df_day[j,"ultCot"]) &&
+          as.Date(df_day[i,'ultCot']) <= as.Date(ult_bal_dates[per])){
+        
+        #se for maior: retirando o valor de cada variável correspondente à
+        #posição do valor pertencente
+        ult_cot = ult_cot[-j]; cod = cod[-j]; cotAtual = cotAtual[-j];
+        divY = divY[-j]
+        
+        #colocando os valores que teve a maior ultCot (preço atualizado)
+        #ult_cot[per] = df_day[i,"ultCot"]    ### codigo travado            
+        ult_cot = c(ult_cot, df_day[i,"ultCot"])
+        cod = c(cod, df_day[i,"cod"])
+        cotAtual = c(cotAtual, df_day[i,"cotAtual"])
+        divY = c(divY, df_day[i, "divYield"])
+      }
+    } else if (as.Date(df_day[i,'ultCot']) <= as.Date(ult_bal_dates[per])) {
+      #se não pertence e é menor que o período:
+      #apenas colocando o valor da iteração atual
       ult_cot = c(ult_cot, df_day[i,"ultCot"])
       cod = c(cod, df_day[i,"cod"])
       cotAtual = c(cotAtual, df_day[i,"cotAtual"])
@@ -33,16 +85,29 @@ ult_cot = cod = cotAtual = divY = c()
     
     
   }
+  
+  # criando o data.frame filtrado
   df_day_fil = data.frame(cod, cotAtual, divY, ult_cot)
-
   
+  #Criando as variáveis do db trimestral
   ult_bal = codigo = roic = cres_rec5 = n_ac = divb = disp = ativc = c();
-  ativ = patl = recl12 = ebit12 = Lucl12 = recl3 = c()
+  ativ = patl = recl12 = ebit12 = Lucl12 = recl3 = ebit3 = Lucl3 = c()
   
+  #Variáveis para unirem ao db trimestral
   ult_cot_t = cotAtual_t = divY_t = c()
+  
+  #loop através da coluna "ultBal" do db trimestral
   for (i in 1:length(df_tri[,"ultBal"])){
-    if (df_tri[i,"ultBal"] == "2023-03-31"){
+    
+    #escolhendo o trimestre a ser trabalhado
+    if (df_tri[i,"ultBal"] == ult_bal_dates[per]){
+      
+      #Verificando a linha do db trimestral à qual o código pertence
       j = match(df_tri[i,"codigo"], cod)
+      
+      #Colocanda cada valor das variáveis do dbday em cada posição
+      #correspondente no dbtri, além dos valores das variáveis do próprio
+      #dbtri
       ult_cot_t = c(ult_cot_t, ult_cot[j])
       cotAtual_t = c(cotAtual_t, cotAtual[j])
       ult_bal =  c(ult_bal, df_tri[i,"ultBal"])
@@ -60,168 +125,279 @@ ult_cot = cod = cotAtual = divY = c()
       ebit12 = c(ebit12, df_tri[i,"ebit12m"])
       Lucl12 = c(Lucl12, df_tri[i,"LucLiq12m"])
       recl3 = c(recl3, df_tri[i,"recLiq3m"])
-  }
-}
-ult_bal_dates = c()
-for (i in df_tri[,"ultBal"]){
-  if (i %in% ult_bal_dates){}
-  else{
-    ult_bal_dates = c(ult_bal_dates, i)
-  }
-}
-per = c()
-for (i in length(df_tri[,"ultBal"])){
-  j = match(df_tri[i,"ultBal"], ult_bal_dates)
-    per = c(per,data.frame(ult_bal, codigo, roic, cres_rec5, n_ac, divb, disp,
-                           ativc, ativ, patl, recl12, ebit12, Lucl12, recl3))
-}
-
-df_tri_3t22 = data.frame(ult_cot_t, cotAtual_t, ult_bal, codigo, roic, cres_rec5,
-                         divY_t, n_ac, divb, disp,
-                         ativc, ativ, patl, recl12, ebit12, Lucl12, recl3,
-                         row.names = codigo)
-
-
-#gridExtra::grid.table(df_tri_3t22 %>% slice(1:20))
-
-
-pl = round(cotAtual_t/(Lucl12/n_ac), 2)
-pv = round(cotAtual_t/(patl/n_ac), 2)
-roe = round((Lucl12/patl)*100, 2)
-roic = round(roic, 2)
-p_cxa = round(cotAtual_t/(disp/n_ac), 2)
-p_ativc = round(cotAtual_t/(ativc/n_ac), 2)
-p_ativ = round(cotAtual_t/(ativ/n_ac), 2)
-div_cxa = round(divb/disp, 2)
-marg_ebit = round((ebit12/recl12)*100, 2)
-marg_liq = round((Lucl12/recl12)*100, 2)
-cres_rec5 = round(cres_rec5, 2)
-divY_t = round(divY_t, 2)
-lynch = round((divY_t+(cres_rec5/5))/pl, 2)
-div_lucm = round(divb/(Lucl12/12), 2)
-
-
-crit = data.frame(pl ,pv ,roe ,roic ,p_cxa ,p_ativc ,p_ativ , div_cxa,
-                  marg_ebit ,marg_liq ,cres_rec5 ,divY_t ,lynch,
-                  div_lucm, row.names = codigo)
-
-
-rmv_inf_values_row = function(df){
-  for (r in 1:length(df[,1])){
-    if (is.na(match(Inf, df[r,])) || is.na(match(Inf, df[r,]))){
-      
-    } else {
-      df = df[-r,]
-    }
-    
-  }
-  return(df)
-}
-
-rmv_neg_pl = function(df){
-  pl_neg = c()
-  col_i = match("P/L",colnames(df))
-  len = length(df[,col_i])
-  for (r in 1:len){
-    if (!is.na(df[r,col_i])){
-      if (df[r,col_i] < 0){
-        pl_neg = c(pl_neg,(df[r,"P/L"]))
-      }
+      ebit3 = c(ebit3, df_tri[i, "ebit3m"])
+      Lucl3 = c(Lucl3, df_tri[i, "LucLiq3m"])
     }
   }
   
-  for (i in pl_neg) {
-    if (i %in% df[,col_i]){
-      df = df[-match(i,df[,col_i]),]
-    }
+  #df trimestral das demonstrações
+  df_tri_dem = data.frame(ult_cot_t, cotAtual_t, ult_bal, roic, cres_rec5,
+                          divY_t, n_ac, divb, disp, ativc, ativ, patl, recl12,
+                          ebit12, Lucl12, recl3, row.names = codigo)
+  
+  #passando o df para a lista
+  trimestres[[per]] = df_tri_dem
+  
+  #gridExtra::grid.table(df_tri_3t22 %>% slice(1:20))
+  
+  
+  # criando os índices
+  pl = round(cotAtual_t/(Lucl12/n_ac), 2)
+  pl3 = round(cotAtual_t/(as.numeric(Lucl3)/n_ac), 2)
+  lp = round((Lucl12/n_ac)/cotAtual_t, 2)
+  lp3 = round((as.numeric(Lucl3)/n_ac)/cotAtual_t, 2)
+  vp = round((patl/n_ac)/cotAtual_t, 2)
+  roe = round((Lucl12/patl)*100, 2)
+  roe3 = round((as.numeric(Lucl3)/patl)*100, 2)
+  roic = round(as.numeric(roic), 2)
+  cxa_p = round((disp/n_ac)/cotAtual_t, 2)
+  ativc_p = round((ativc/n_ac)/cotAtual_t, 2)
+  ativ_p = round((ativ/n_ac)/cotAtual_t, 2)
+  div_cxa = round(divb/disp, 2)
+  marg_ebit = round((ebit12/recl12)*100, 2)
+  marg_ebit3 = round((as.numeric(ebit3)/recl3)*100, 2)
+  marg_liq = round((Lucl12/recl12)*100, 2)
+  marg_liq3 = round((as.numeric(Lucl3)/recl3)*100, 2)
+  cres_rec5 = round(as.numeric(cres_rec5), 2)
+  divY_t = round(as.numeric(divY_t), 2)
+  lynch = round((divY_t+(cres_rec5/5))/pl, 2)
+  lynch3 = round((divY_t/3+(cres_rec5/15))/pl3, 2)
+  div_lucm = round(divb/(as.numeric(Lucl3)/3), 2)
+  
+  
+  crit = data.frame(lp, lp3, vp, roe, roe3, roic, cxa_p, ativc_p, ativ_p,
+                    div_cxa, marg_ebit, marg_ebit3 ,marg_liq, marg_liq3,
+                    cres_rec5 ,divY_t ,lynch, lynch3, div_lucm,
+                    row.names = codigo)
+  
+  #############       filtrando o db        ###################################
+  
+  #removendo valores infinitos
+  
+  
+###############     chatgpt start      ###############################
+  
+  rmv_inf_values_row <- function(df) {
+    rows_with_inf <- apply(df, 1, function(row) any(is.infinite(row)))
+    df <- df[!rows_with_inf, ]
+    return(df)
   }
-  return(df)
+  
+###############     chatgpt  end     ###############################
+  
+  crit = rmv_inf_values_row(crit)
+  
+ 
+  
+###############     chatgpt start      ###############################
+  
+  rmv_na_val <- function(df) {
+    incomplete_rows <- !complete.cases(df)
+    
+    if (any(incomplete_rows)) {
+      df <- df[complete.cases(df), ]
+    }
+    
+    return(df)
+  }
+  crit <- rmv_na_val(crit)
+  
+###############     chatgpt  end     ###############################
+  
+  
+  
+  colnames(crit) = c("L/P", 'L/P (tri)', "VPA/P", "ROE" , 'ROE (tri)', "ROIC",
+                     "(Caixa/Ação)/Preço", "(Ativos Circulantes/Ação)/Preço",
+                     "(Ativos/Ação)/Preço", "Dív Bruta/Caixa", "Marg. EBIT",
+                     'Marg. EBIT (tri)', "Marg. Líquida", 'Marg. Líquida (tri)',
+                     "Cresc. Rec. (5 Anos)", "Dividendyield", "Lynch",
+                    'Lynch (tri)',  "Dív. Bruta/Lucro Mensal")
+  
+  #gridExtra::grid.table(crit %>% slice(1:20))
+  
+  crit_tri[[per]] = crit
+  print(paste('DF do periodo: ', ult_bal_dates[per], ' criado'))
 }
 
-rmv_neg_pvpa = function(df){
-  pvpa_neg = c()
-  col_i = match("P/VPA",colnames(df))
-  len = length(df[,col_i])
-  for (r in 1:len){
-    if (!is.na(df[r,col_i])){
-      if (df[r,col_i] < 0){
-        pvpa_neg = c(pvpa_neg,df[r,"P/VPA"])
-      }
+
+###################             periodo 5         ##############################
+################################################################################
+
+
+###########       essa linha de codigos é só para testes        ################
+################################################################################
+
+#criando as variaveis do db diário
+ult_cot = cod = cotAtual = c()
+
+# loop na coluna 'ultCot' do dbday
+for (i in 1:nrow(df_day)){
+  
+  # verificando se o codigo da ação já pertence a coluna do periodo df cod    
+  if (df_day[i,"cod"] %in% cod){
+    
+    # obtendo o número da posição desse código na varável cod
+    j = match(df_day[i,"cod"], cod)
+    
+    # verificando se o valor da ultima cotação da iteração atual é maior que
+    #o valor pertencente à variável
+    if (as.Date(df_day[i,"ultCot"]) > as.Date(df_day[j,"ultCot"])){
+      
+      #se for maior: retirando o valor de cada variável correspondente à
+      #posição do valor pertencente
+      ult_cot = ult_cot[-j]; cod = cod[-j]; cotAtual = cotAtual[-j]
+      
+      #colocando os valores que teve a maior ultCot (preço atualizado)
+      #ult_cot[per] = df_day[i,"ultCot"]    ### codigo travado            
+      ult_cot = c(ult_cot, df_day[i,"ultCot"])
+      cod = c(cod, df_day[i,"cod"])
+      cotAtual = c(cotAtual, df_day[i,"cotAtual"])
     }
+  } else if (as.Date(df_day[i,'ultCot']) <= as.Date(ult_bal_dates[per])) {
+    #se não pertence apenas colocando o valor da iteração atual
+    ult_cot = c(ult_cot, df_day[i,"ultCot"])
+    cod = c(cod, df_day[i,"cod"])
+    cotAtual = c(cotAtual, df_day[i,"cotAtual"])
   }
-  for (i in pvpa_neg) {
-    if (i %in% df[,col_i]){
-      df = df[-match(i,df[,col_i]),]
-    }
-  }
-  return(df)
+  
 }
 
-colnames(crit) = c("P/L", "P/VPA",
-                   "ROE",
-                   "ROIC",
-                   "Preço/(Caixa/Ação)", "Preço/(Ativos Circulantes/Ação)",
-                   "Preço/(Ativos/Ação)", "Dív Bruta/Caixa", "Mar. EBITDA",
-                   "Marg. Líquida", "Cresc. Rec. (5 Anos)",
-                   "Dividendyield", "Lynch",
-                   "Dív. Bruta/Lucro Mensal")
+last_cot = data.frame(ult_cot, cotAtual)
+row.names(last_cot) = cod
+
+var_price = c()
+for (r in 1:nrow(crit_tri[[5]])) {
+  
+  # encontrando a posição da linha do codigo da iteração no df das demonstrações
+  j_dem = match(row.names(crit_tri[[5]])[r], row.names(trimestres[[5]]))
+  
+  # encontrando a posição da linha do codigo da iteração no df last_cot
+  j_lastc = match(row.names(crit_tri[[5]])[r], row.names(last_cot))
+  
+  
+  var_price = c(var_price,
+(last_cot[j_lastc, "cotAtual"] - trimestres[[5]][j_dem, "cotAtual_t"])/trimestres[[5]][j_dem, "cotAtual_t"])
+  
+}
+
+# adicionando as variações dos precos ao df crit do 5 periodo
+crit_tri[[5]]$v_price = var_price
 
 
-crit = rmv_inf_values_row(crit)
+#################         coeficiente de correlação         ####################
+library(openxlsx)
+cor_tab = data.frame(cor(crit_tri[[5]]))
+write.xlsx(cor_tab,
+  file = 'C:/files/projects/programacao/python/acoes_data/correlacao.xlsx')
 
-length(crit[,1])
-
-boxplot(crit$`P/L`, range = 3, horizontal = T)
-
-crit = rmv_neg_pl(crit)
-
-boxplot(crit$`P/L`, range = 3, horizontal = T)
-
-length(crit[,1])
-crit = rmv_neg_pvpa(crit)
-length(crit[,1])
+##      diagrama de dispersão
+plot(crit_tri[[5]]$`Marg. EBIT`, crit_tri[[5]]$`Marg. EBIT (tri)`)
 
 
-#gridExtra::grid.table(crit %>% slice(1:20))
 
 ## aplicando teste de normalidade
-apply(crit, 2, shapiro.test)
+apply(crit_tri[[5]], 2, shapiro.test)
 
-## verificando os fluxogramas densidade
-d = density(crit$`P/L`)
-plot(d, main = "Densidade do P/L")
+
+################################################################################
+#################       Verificando os boxplot        ##########################
+################################################################################
+
+#                 L/P
+boxplot(crit_tri[[5]]$`L/P`, horizontal = T, range = 3)
+title(xlab = "Valores de L/P", main = 'Boxplot para o L/P', cex.main = 2.5,
+      cex.lab = 2)
+
+#                 L/P (tri)
+boxplot(crit_tri[[5]]$`L/P (tri)`, horizontal = T, range = 3)
+title(xlab = "Valores de L/P (tri)", main = 'Boxplot para o L/P (tri)',
+      cex.main = 2.5, cex.lab = 2)
+
+#                 VPA/P
+boxplot(crit_tri[[5]]$`VPA/P`, horizontal = T, range = 3)
+title(xlab = "Valores de VPA/P", main = 'Boxplot para o VPA/P',
+      cex.main = 2.5, cex.lab = 2)
+
+#                 ROE
+boxplot(crit_tri[[5]]$ROE, horizontal = T, range = 3)
+title(xlab = "Valores do ROE", main = 'Boxplot para o ROE',
+      cex.main = 2.5, cex.lab = 2)
+
+#                 ROE (tri)
+boxplot(crit_tri[[5]]$`ROE (tri)`, horizontal = T, range = 3)
+title(xlab = "Valores do ROE (tri)", main = 'Boxplot para o ROE (tri)',
+      cex.main = 2.5, cex.lab = 2)
+
+#                 ROIC
+boxplot(crit_tri[[5]]$ROIC, horizontal = T, range = 3)
+title(xlab = "Valores do ROIC", main = 'Boxplot para o ROIC',
+      cex.main = 2.5, cex.lab = 2)
+
+#                 Dív Bruta/Caixa
+boxplot(crit_tri[[5]]$`Dív Bruta/Caixa`, horizontal = T, range = 3)
+title(xlab = "Valores da Dív Bruta/Caixa",
+      main = 'Boxplot para a Dív Bruta/Caixa',
+      cex.main = 2.5, cex.lab = 2)
+
+#                 Marg. EBIT
+boxplot(crit_tri[[5]]$`Marg. EBIT`, horizontal = T, range = 3)
+title(xlab = "Valores da Marg. EBIT", main = 'Boxplot para a Marg. EBIT',
+      cex.main = 2.5, cex.lab = 2)
+
+#                 Marg. EBIT (tri)
+boxplot(crit_tri[[5]]$`Marg. EBIT (tri)`, horizontal = T, range = 3)
+title(xlab = "Valores da Marg. EBIT (tri)",
+      main = 'Boxplot para a Marg. EBIT (tri)',
+      cex.main = 2.5, cex.lab = 2)
+
+
+
+
+
+################################################################################
+####       verificando os histogramas                  #########################
+################################################################################
+
+##########   L/P
+hist(crit_tri[[5]]$`L/P`, breaks = 100)
+
+##########      L/P (tri)     
+d = density(crit_tri[[5]]$`L/P (tri)`, bw = 0.2)
+plot(d, main = "Densidade do L/P (tri)", xlim = c(-1,1))
 polygon(d, col = "#5577ff", border = "white")
 
-d = density(crit$`P/VPA`)
-plot(d, main = "Densidade do P/VPA")
-polygon(d, col = "#ffcccc", border = "black")
+#########      VPA/P
+d = density(crit_tri[[5]]$`VPA/P`, bw = 0.2)
+plot(d, main = "Densidade do VPA/P", xlim = c(-2,4))
+polygon(d, col = "#ffcccc", border = "white")
 
-d = density(crit$ROE)
+d = density(crit_tri[[5]]$ROE)
 plot(d, main = "Densidade do ROE")
 polygon(d, col = "#00cccc", border = "black")
 
-d = density(crit$ROIC)
+d = density(crit_tri[[5]]$ROIC)
 plot(d, main = "Densidade do ROIC")
 polygon(d, col = "#cccccc", border = "black")
 
-d = density(crit$`Preço/(Caixa/Ação)`)
+d = density(crit_tri[[5]]$`Preço/(Caixa/Ação)`)
 plot(d, main = "Densidade do P/Cx")
 polygon(d, col = "#ccccff", border = "black")
 
-d = density(crit$`Preço/(Ativos Circulantes/Ação)`)
+d = density(crit_tri[[5]]$`Preço/(Ativos Circulantes/Ação)`)
 plot(d, main = "Densidade do P/AtC")
 polygon(d, col = "#ccff00", border = "black")
 
-d = density(crit$`Preço/(Ativos/Ação)`)
+d = density(crit_tri[[5]]$`Preço/(Ativos/Ação)`)
 plot(d, main = "Densidade do P/At")
 polygon(d, col = "#005500", border = "white")
 
-d = density(crit$`Dív Bruta/Caixa`)
+d = density(crit_tri[[5]]$`Dív Bruta/Caixa`)
 plot(d, main = "Densidade do DivB/Cx")
 polygon(d, col = "#aa0022", border = "black")
 
 
 
+### procurando roe's falsos, lucl e patl negativos
 emp_lucpat_neg = c()
 for(r in 1:length(df_tri_3t22[,1])){
   if(df_tri_3t22[r,'Lucl12'] < 0 && df_tri_3t22[r,'patl'] < 0){
@@ -294,9 +470,11 @@ boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
 
 ## retirando max(Div/Lucm)
 
-row.names(crit)[match(max(crit$`Dív. Bruta/Lucro Mensal`),crit$`Dív. Bruta/Lucro Mensal`)]
+row.names(crit)[match(max(crit$`Dív. Bruta/Lucro Mensal`),
+                      crit$`Dív. Bruta/Lucro Mensal`)]
 
-crit = crit[-match(max(crit$`Dív. Bruta/Lucro Mensal`), crit$`Dív. Bruta/Lucro Mensal`),]
+crit = crit[-match(max(crit$`Dív. Bruta/Lucro Mensal`),
+                   crit$`Dív. Bruta/Lucro Mensal`),]
 
 boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
                   "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
@@ -365,3 +543,112 @@ for (i in sort(result$v_ag, decreasing = T)) {
 for (i in 1:length(best10)){
   print(c(best10[i], val10[i]))
 }
+
+
+##################      Fuzzy Sets    #########################################
+library(FuzzyNumbers)
+library(devtools)
+
+
+
+# a função a seguir precisa de 5 argumentos:
+# 1 - data.frame para ser encontrando as funções trapezoidais
+# 2 - coluna objetivo, para ser comparada com as outras
+# 3 - numero de linhas do resultado
+# 4 - valor dos coeficientes acumulados
+# 5 - valor mínimo para a média dos outputs da função fuzzy
+
+look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
+  
+  col_num = match(col_obj, colnames(df))
+  
+  res = data.frame(matrix(ncol = 6, nrow = 0))
+  colnames(res) = c("indices", "p", "q", "r", "s", "coef.corr")
+  
+  while(nrow(res) == 0 || (sum(res[, "coef.corr"]) * (1 / nrow(res))) < coef_val){
+  
+  #variáveis para conter os resultados
+  ind = param_p = param_q = param_r = param_s = coef_corr = c()
+  
+  for (c in 1:length(colnames(df))) {
+    
+    if (colnames(df)[c] != col_obj){
+      input = df[,c]
+    
+    ## selecionando aleatoriamente entre 'p' ou 's'
+    choice_param = sample(c('p', 's'), 1)
+    
+    #verificando qual coeficiente foi escolhido
+    if (choice_param == 'p'){
+      #se foi 'p' gerando os parametros do menor para o maior
+      p = round(runif(1, min(input), max(input)), 2)
+      q = round(runif(1, p, max(input)), 2)
+      r = round(runif(1, q, max(input)), 2)
+      s = round(runif(1, r, max(input)), 2)
+    } else {
+      #se foi o 's' gerando os parametros do maior para o menor
+      s = round(runif(1,min(input), max(input)), 2)
+      r = round(runif(1,min(input), s), 2)
+      q = round(runif(1,min(input), r), 2)
+      p = round(runif(1,min(input), q), 2)
+    }
+    
+    #gerando a função que mostra o grau de pertencimento ao conjunto de
+    #boas ações
+    boa = TrapezoidalFuzzyNumber(p, q, r, s)
+    
+    output = c()
+    for (ent in input) {
+      # Cálculo do grau de pertinência
+      membership_grade = ifelse(ent <= p | ent >= s, 0,
+                                 ifelse(ent >=q & ent <= r, 1,
+                                        ifelse(ent > p & ent < q,
+                                               (ent - p) / (q - p),
+                                               (s - ent) / (s - r))))
+      
+      # passando os valores para o output
+      output = c(output, membership_grade)
+    }
+    
+    #criando a possível nova linha do df res
+    
+    new_row = data.frame('indices' = colnames(df)[c], 'p' = p, 'q' = q, 'r' = r,
+                         's' = s, "coef.corr" = cor(df[,col_num], output))
+  
+    # veridicando se a coluna não é igual a coluna objetivo
+    if (colnames(df)[c] != col_num && !is.na(cor(df[,col_num], output)) &&
+        mean(output) > mean_lim_bottom){
+      
+      #verificando a quantidade de linhas do df res
+      if (nrow(res) < num_row){
+      res = rbind(res, new_row)
+      
+      } #verificando se o coeficiente encontrado e maior que o mínimo
+      else if (sd(df[,col_num]) != 0 && sd(output) != 0 &&
+               cor(df[,col_num], output) > min(res[,"coef.corr"])){
+        
+        #encontrando a linha  do valor minimo do coeficiente
+        j_min = match(min(res[,"coef.corr"]), res[,"coef.corr"])
+        
+        #removendo a linha do valor mínimo
+        res = res[-j_min,]
+        
+        #adicionando o valor encontrado
+        res = rbind(res, new_row)
+        
+        print(paste(colnames(df)[c], 'p, q, r, s: ', p, q, r, s))
+        
+        plot(input, output, xlab = colnames(df)[c])
+        plot(boa, xlab = colnames(df)[c])
+      }
+    
+    }
+      
+   }
+    
+   
+  }
+  }
+  return(res)
+}
+look_fuzzy_set(crit_tri[[5]], col_obj = "v_price", 10, 0.6, 0.1)

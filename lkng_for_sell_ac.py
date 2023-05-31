@@ -79,7 +79,7 @@ for empresa in empresas_df:
         """
 
         text = msg.format(empresa, round(min(df["cotacao"]), 2), str(verMinDate(df['data'], df['cotacao']))[0:10],
-                          round(df["cotacao"].iloc[len(df["cotacao"])-1], 2), round(-var*100,2))
+                          round(df["cotacao"].iloc[len(df["cotacao"])-1], 2), round(var*100,2))
 
         msg = """\
         <html>
@@ -97,7 +97,7 @@ for empresa in empresas_df:
         """
 
         html = msg.format(empresa, round(min(df["cotacao"]), 2), str(verMinDate(df['data'], df['cotacao']))[0:10],
-                          round(df["cotacao"].iloc[len(df["cotacao"])-1], 2), round(-var*100,2))
+                          round(df["cotacao"].iloc[len(df["cotacao"])-1], 2), round(var*100,2))
 
         # Turn these into plain/html MIMEText objects
         part1 = MIMEText(text, "plain")
