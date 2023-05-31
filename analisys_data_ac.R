@@ -578,19 +578,21 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
     ## selecionando aleatoriamente entre 'p' ou 's'
     choice_param = sample(c('p', 's'), 1)
     
+    arredond = 2  # qtd de casa decimais para os parametros
+    
     #verificando qual coeficiente foi escolhido
     if (choice_param == 'p'){
       #se foi 'p' gerando os parametros do menor para o maior
-      p = round(runif(1, min(input), max(input)), 2)
-      q = round(runif(1, p, max(input)), 2)
-      r = round(runif(1, q, max(input)), 2)
-      s = round(runif(1, r, max(input)), 2)
+      p = round(runif(1, min(input), max(input)), arredond)
+      q = round(runif(1, p, max(input)), arredond)
+      r = round(runif(1, q, max(input)), arredond)
+      s = round(runif(1, r, max(input)), arredond)
     } else {
       #se foi o 's' gerando os parametros do maior para o menor
-      s = round(runif(1,min(input), max(input)), 2)
-      r = round(runif(1,min(input), s), 2)
-      q = round(runif(1,min(input), r), 2)
-      p = round(runif(1,min(input), q), 2)
+      s = round(runif(1,min(input), max(input)), arredond)
+      r = round(runif(1,min(input), s), arredond)
+      q = round(runif(1,min(input), r), arredond)
+      p = round(runif(1,min(input), q), arredond)
     }
     
     #gerando a função que mostra o grau de pertencimento ao conjunto de
@@ -651,4 +653,4 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
   }
   return(res)
 }
-look_fuzzy_set(crit_tri[[5]], col_obj = "v_price", 10, 0.6, 0.1)
+look_fuzzy_set(crit_tri[[5]], col_obj = "v_price", 10, 0.37, 0.03)
