@@ -551,7 +551,7 @@ library(devtools)
 
 
 
-# a função a seguir precisa de 5 argumentos:
+# a função a seguir precisa de 6 argumentos:
 # 1 - data.frame para ser encontrando as funções trapezoidais
 # 2 - coluna objetivo, para ser comparada com as outras
 # 3 - numero de linhas do resultado
@@ -562,15 +562,20 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
   
   col_num = match(col_obj, colnames(df))
   
-  res = data.frame(matrix(ncol = 6, nrow = 0))
-  colnames(res) = c("indices", "p", "q", "r", "s", "coef.corr")
+  df_list = list()
+  for (c in 1:ncol(df)){
+    if (colnames(df)[c] != col_obj){
+      df_list[[c]] = data.frame(matrix(ncol = 6, nrow = 0))
+      colnames(df_list[[c]]) = c("indices", "p", "q", "r", "s", "coef.corr")
+    }
+  }
   
-  while(nrow(res) == 0 || (sum(res[, "coef.corr"]) * (1 / nrow(res))) < coef_val){
+  print(paste('length(df_list) :', length(df_list)))
+  media_coef = 0
   
-  #variáveis para conter os resultados
-  ind = param_p = param_q = param_r = param_s = coef_corr = c()
+  repeat{
   
-  for (c in 1:length(colnames(df))) {
+  for (c in 1:(length(colnames(df))-1)) {
     
     if (colnames(df)[c] != col_obj){
       input = df[,c]
@@ -617,40 +622,47 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
     new_row = data.frame('indices' = colnames(df)[c], 'p' = p, 'q' = q, 'r' = r,
                          's' = s, "coef.corr" = cor(df[,col_num], output))
   
-    # veridicando se a coluna não é igual a coluna objetivo
-    if (colnames(df)[c] != col_num && !is.na(cor(df[,col_num], output)) &&
-        mean(output) > mean_lim_bottom){
+    # veridicando se a correlação existe e se a media da imagem é maior que o lim
+    if (!is.na(cor(df[,col_num], output)) && mean(output) > mean_lim_bottom){
       
       #verificando a quantidade de linhas do df res
-      if (nrow(res) < num_row){
-      res = rbind(res, new_row)
+      if (nrow(df_list[[c]]) < num_row){
+        df_list[[c]] = rbind(df_list[[c]], new_row)
       
       } #verificando se o coeficiente encontrado e maior que o mínimo
       else if (sd(df[,col_num]) != 0 && sd(output) != 0 &&
-               cor(df[,col_num], output) > min(res[,"coef.corr"])){
+               cor(df[,col_num], output) > min(df_list[[c]][,"coef.corr"])){
         
         #encontrando a linha  do valor minimo do coeficiente
-        j_min = match(min(res[,"coef.corr"]), res[,"coef.corr"])
+        j_min = match(min(df_list[[c]][,"coef.corr"]), df_list[[c]][,"coef.corr"])
         
         #removendo a linha do valor mínimo
-        res = res[-j_min,]
+        df_list[[c]] = df_list[[c]][-j_min,]
         
         #adicionando o valor encontrado
-        res = rbind(res, new_row)
+        df_list[[c]] = rbind(df_list[[c]], new_row)
         
         print(paste(colnames(df)[c], 'p, q, r, s: ', p, q, r, s))
+        print(paste('media_coef: ', media_coef))
         
         plot(input, output, xlab = colnames(df)[c])
         plot(boa, xlab = colnames(df)[c])
       }
     
     }
-      
+    media_all = c()
+    for (d in df_list) {
+      media_all = c(media_all, mean(d[,'coef.corr']))
+    }
+    media_coef = mean(media_all)
    }
+  }
     
-   
+    if (!is.nan(media_coef) && media_coef > coef_val){
+      break
+    }
   }
-  }
-  return(res)
+  
+  return(df_list[1:length(df_list)])
 }
-look_fuzzy_set(crit_tri[[5]], col_obj = "v_price", 10, 0.37, 0.03)
+look_fuzzy_set(crit_tri[[5]], col_obj = "v_price", 5, 0.6, 0.03)
