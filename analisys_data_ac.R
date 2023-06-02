@@ -135,9 +135,6 @@ for (per in 1:length(ult_bal_dates)){
                           divY_t, n_ac, divb, disp, ativc, ativ, patl, recl12,
                           ebit12, Lucl12, recl3, row.names = codigo)
   
-  #passando o df para a lista
-  trimestres[[per]] = df_tri_dem
-  
   #gridExtra::grid.table(df_tri_3t22 %>% slice(1:20))
   
   
@@ -204,6 +201,43 @@ for (per in 1:length(ult_bal_dates)){
   
 ###############     chatgpt  end     ###############################
   
+  
+  ### procurando roe's falsos, lucl e patl negativos
+  emp_lucpat_neg = c()
+  for(r in 1:length(df_tri_dem[,1])){
+    if(df_tri_dem[r,'Lucl12'] < 0 && df_tri_dem[r,'patl'] < 0){
+      emp_lucpat_neg = c(emp_lucpat_neg, df_tri_dem[r, 'codigo'])
+    }
+  }
+  
+  print(paste('qtd de empresas com roes falsos: ', length(emp_lucpat_neg)))
+  roe_err = c()
+  for (r in emp_lucpat_neg){
+    roe_err = c(roe_err,(df_tri_dem[r,"Lucl12"]/df_tri_dem[r,'patl'])*100)
+  }
+  
+  print(paste('empresa com o maior roe falso: ',
+              emp_lucpat_neg[match(max(roe_err), roe_err)]))
+  
+  ## retirando os roes falsos
+  
+  print(paste('número de empresas antes da retirada dos roes falsos: ',
+              nrow(crit)))
+  
+  
+  for (r in 1:length(crit$ROE)){
+    if (row.names(crit)[r] %in% emp_lucpat_neg){
+      print(row.names(crit)[r]) #empresa retirada (tinha passado pelos
+      #2 filtros anteriores)
+      crit = crit[-r,]
+    }
+  }
+  
+  print(paste('número de empresas depois da retirada dos roes falsos: ',
+              nrow(crit)))
+  
+  #passando o df para a lista
+  trimestres[[per]] = df_tri_dem
   
   
   colnames(crit) = c("L/P", 'L/P (tri)', "VPA/P", "ROE" , 'ROE (tri)', "ROIC",
@@ -397,36 +431,7 @@ polygon(d, col = "#aa0022", border = "black")
 
 
 
-### procurando roe's falsos, lucl e patl negativos
-emp_lucpat_neg = c()
-for(r in 1:length(df_tri_3t22[,1])){
-  if(df_tri_3t22[r,'Lucl12'] < 0 && df_tri_3t22[r,'patl'] < 0){
-    emp_lucpat_neg = c(emp_lucpat_neg, df_tri_3t22[r, 'codigo'])
-    }
-}
 
-length(emp_lucpat_neg)
-roe_err = c()
-for (r in emp_lucpat_neg){
-  roe_err = c(roe_err,(df_tri_3t22[r,"Lucl12"]/df_tri_3t22[r,'patl'])*100)
-}
-
-emp_lucpat_neg[match(max(roe_err), roe_err)] ## empresa com o maior roe falso
-
-
-## retirando os roes falsos
-
-length(crit[,1])
-
-for (r in 1:length(crit$ROE)){
-  if (row.names(crit)[r] %in% emp_lucpat_neg){
-    print(row.names(crit)[r]) #empresa retirada (tinha passado pelos
-                              #2 filtros anteriores)
-    crit = crit[-r,]
-  }
-}
-
-length(crit[,1])
 
 boxplot(names = c("P/L", "P/VPA", "ROE", "ROIC", "P/(Cx/A)", "P/(Ativ Circ/A)",
                   "P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT", "Marg. Líq",
@@ -556,7 +561,7 @@ library(devtools)
 # 2 - coluna objetivo, para ser comparada com as outras
 # 3 - numero de linhas do resultado
 # 4 - valor dos coeficientes acumulados
-# 5 - valor mínimo para a média dos outputs da função fuzzy
+# 5 - valor mínimo para a média dos outputs da função fuzzy (< 0.5)
 
 look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
   
@@ -623,7 +628,8 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
                          's' = s, "coef.corr" = cor(df[,col_num], output))
   
     # veridicando se a correlação existe e se a media da imagem é maior que o lim
-    if (!is.na(cor(df[,col_num], output)) && mean(output) > mean_lim_bottom){
+    if (!is.na(cor(df[,col_num], output)) &&
+        (1 - mean_lim_bottom) > mean(output) > mean_lim_bottom){
       
       #verificando a quantidade de linhas do df res
       if (nrow(df_list[[c]]) < num_row){
@@ -665,4 +671,4 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
   
   return(df_list[1:length(df_list)])
 }
-look_fuzzy_set(crit_tri[[5]], col_obj = "v_price", 5, 0.6, 0.03)
+look_fuzzy_set(crit_tri[[5]], col_obj = "v_price", 5, 0.25, 0.05)
