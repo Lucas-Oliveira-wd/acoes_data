@@ -202,7 +202,7 @@ for (per in 1:length(ult_bal_dates)){
 ###############     chatgpt  end     ###############################
   
   
-  ### procurando roe's falsos, lucl e patl negativos
+#############       procurando roe's falsos, lucl e patl negativos       #######
   emp_lucpat_neg = c()
   for(r in 1:length(df_tri_dem[,1])){
     if(df_tri_dem[r,'Lucl12'] < 0 && df_tri_dem[r,'patl'] < 0){
@@ -226,7 +226,7 @@ for (per in 1:length(ult_bal_dates)){
   
   
   for (r in 1:length(crit$ROE)){
-    if (row.names(crit)[r] %in% emp_lucpat_neg){
+    if (length(emp_lucpat_neg) < 0 && row.names(crit)[r] %in% emp_lucpat_neg){
       print(row.names(crit)[r]) #empresa retirada (tinha passado pelos
       #2 filtros anteriores)
       crit = crit[-r,]
@@ -432,86 +432,6 @@ polygon(d, col = "#aa0022", border = "black")
 
 
 
-
-boxplot(names = c("P/L", "P/VPA", "ROE", "ROIC", "P/(Cx/A)", "P/(Ativ Circ/A)",
-                  "P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT", "Marg. Líq",
-                  "Cresc.Rec.5A", "Dividendyield", "Lynch",
-                  "Dív.Br/Luc Mens"), crit, outline = T, range = 1.5)
-
-
-## Retirando max(marg. liq)
-
-row.names(crit)[match(max(crit$`Marg. Líquida`),crit$`Marg. Líquida`)]
-
-crit = crit[-match(max(crit$`Marg. Líquida`), crit$`Marg. Líquida`),]
-
-boxplot(names = c("P/L", "P/VPA", "ROE", "ROIC", "P/(Cx/A)", "P/(Ativ Circ/A)",
-                  "P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT", "Marg. Líq",
-                  "Cresc.Rec.5A", "Dividendyield", "Lynch",
-                  "Dív.Br/Luc Mens"), crit, outline = T, range = 700)
-
-
-## retirando min(marg. ebitda)
-
-row.names(crit)[match(min(crit$`Mar. EBITDA`),crit$`Mar. EBITDA`)]
-
-crit = crit[-match(min(crit$`Mar. EBITDA`), crit$`Mar. EBITDA`),]
-
-boxplot(names = c("P/L", "P/VPA", "ROE", "ROIC", "P/(Cx/A)", "P/(Ativ Circ/A)",
-                  "P/(Ativ/A)", "Dív Bruta/Cx", "Mar. EBIT", "Marg. Líq",
-                  "Cresc.Rec.5A", "Dividendyield", "Lynch",
-                  "Dív.Br/Luc Mens"), crit, outline = T, range = 70)
-
-## retirando max(P/L)
-
-row.names(crit)[match(max(crit$`P/L`),crit$`P/L`)]
-
-crit = crit[-match(max(crit$`P/L`), crit$`P/L`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 50)
-
-## retirando max(Div/Lucm)
-
-row.names(crit)[match(max(crit$`Dív. Bruta/Lucro Mensal`),
-                      crit$`Dív. Bruta/Lucro Mensal`)]
-
-crit = crit[-match(max(crit$`Dív. Bruta/Lucro Mensal`),
-                   crit$`Dív. Bruta/Lucro Mensal`),]
-
-boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-        range = 3)
-
-marg.l = crit$`Marg. Líquida`
-marg.l_rmv_max = c()
-for (i in sort(marg.l)){
-  if (i != max(marg.l)){
-    marg.l_rmv_max = c(marg.l_rmv_max,i)
-  }
-}
-rng_max_mrg_l_s = c(max(marg.l),max(marg.l_rmv_max))
-range(rng_max_mrg_l_s); range(marg.l_rmv_max)
-(range(rng_max_mrg_l_s)[2]-range(rng_max_mrg_l_s)[1])/(range(marg.l_rmv_max)[2]-range(marg.l_rmv_max)[1]) ## > 1
-
-## retirando max(marg.l)
-#
-#row.names(crit)[match(max(crit$`Marg. Líquida`),crit$`Marg. Líquida`)]
-#
-#crit = crit[-match(max(crit$`Marg. Líquida`), crit$`Marg. Líquida`),]
-#
-#boxplot(names = c("pl", "pv", "roe", "roic", "p/cx", "p/at.c",
-#                  "p/at", "div.b/cx", "marg.eb", "marg.l", "cres.rec",
-#                  "dy", "ly", "div.b/luc.m"), crit, outline = T,
-#        range = 26)
-
-
-
-
-
 norm = function(vec){
   vecn = c()
   for (i in vec){
@@ -585,80 +505,232 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
     if (colnames(df)[c] != col_obj){
       input = df[,c]
     
-    ## selecionando aleatoriamente entre 'p' ou 's'
-    choice_param = sample(c('p', 's'), 1)
-    
-    arredond = 2  # qtd de casa decimais para os parametros
-    
-    #verificando qual coeficiente foi escolhido
-    if (choice_param == 'p'){
-      #se foi 'p' gerando os parametros do menor para o maior
-      p = round(runif(1, min(input), max(input)), arredond)
-      q = round(runif(1, p, max(input)), arredond)
-      r = round(runif(1, q, max(input)), arredond)
-      s = round(runif(1, r, max(input)), arredond)
-    } else {
-      #se foi o 's' gerando os parametros do maior para o menor
-      s = round(runif(1,min(input), max(input)), arredond)
-      r = round(runif(1,min(input), s), arredond)
-      q = round(runif(1,min(input), r), arredond)
-      p = round(runif(1,min(input), q), arredond)
-    }
-    
-    #gerando a função que mostra o grau de pertencimento ao conjunto de
-    #boas ações
-    boa = TrapezoidalFuzzyNumber(p, q, r, s)
-    
-    output = c()
-    for (ent in input) {
-      # Cálculo do grau de pertinência
-      membership_grade = ifelse(ent <= p | ent >= s, 0,
-                                 ifelse(ent >=q & ent <= r, 1,
-                                        ifelse(ent > p & ent < q,
-                                               (ent - p) / (q - p),
-                                               (s - ent) / (s - r))))
+      #############       improve parameters search       ######################
+      ##########################################################################
       
-      # passando os valores para o output
-      output = c(output, membership_grade)
-    }
-    
-    #criando a possível nova linha do df res
-    
-    new_row = data.frame('indices' = colnames(df)[c], 'p' = p, 'q' = q, 'r' = r,
-                         's' = s, "coef.corr" = cor(df[,col_num], output))
-  
-    # veridicando se a correlação existe e se a media da imagem é maior que o lim
-    if (!is.na(cor(df[,col_num], output)) &&
-        (1 - mean_lim_bottom) > mean(output) > mean_lim_bottom){
+      desv_times = 5  #multiplicador do desvio padrão, quanto maior, maior
+                      #será a chance de encontrar outros valores fora da
+                      #distribuição
       
-      #verificando a quantidade de linhas do df res
       if (nrow(df_list[[c]]) < num_row){
-        df_list[[c]] = rbind(df_list[[c]], new_row)
+             
+        ## selecionando aleatoriamente entre 'p' ou 's'
+        choice_param = sample(c('p', 's'), 1)
+        
+        arredond = 2  # qtd de casa decimais para os parametros
+        
+        #verificando qual coeficiente foi escolhido
+        if (choice_param == 'p'){
+          #se foi 'p' gerando os parametros do menor para o maior
+          p = round(runif(1, min(input), max(input)), arredond)
+          q = round(runif(1, p, max(input)), arredond)
+          r = round(runif(1, q, max(input)), arredond)
+          s = round(runif(1, r, max(input)), arredond)
+        } else {
+          #se foi o 's' gerando os parametros do maior para o menor
+          s = round(runif(1,min(input), max(input)), arredond)
+          r = round(runif(1,min(input), s), arredond)
+          q = round(runif(1,min(input), r), arredond)
+          p = round(runif(1,min(input), q), arredond)
+        }
+        
+        #gerando a função que mostra o grau de pertencimento ao conjunto de
+        #boas ações
+        boa = TrapezoidalFuzzyNumber(p, q, r, s)
+        
+        output = c()
+        for (ent in input) {
+          # Cálculo do grau de pertinência
+          membership_grade = ifelse(ent <= p | ent >= s, 0,
+                                     ifelse(ent >=q & ent <= r, 1,
+                                            ifelse(ent > p & ent < q,
+                                                   (ent - p) / (q - p),
+                                                   (s - ent) / (s - r))))
+          
+          # passando os valores para o output
+          output = c(output, membership_grade)
+        }
+        
+        #criando a possível nova linha do df res
+        
+        new_row = data.frame('indices' = colnames(df)[c], 'p' = p, 'q' = q, 'r' = r,
+                             's' = s, "coef.corr" = cor(df[,col_num], output))
       
-      } #verificando se o coeficiente encontrado e maior que o mínimo
-      else if (sd(df[,col_num]) != 0 && sd(output) != 0 &&
-               cor(df[,col_num], output) > min(df_list[[c]][,"coef.corr"])){
+        # veridicando se a correlação existe e se a media da imagem é maior que o lim
+        if (!is.na(cor(df[,col_num], output)) &&
+            (1 - mean_lim_bottom) > mean(output) && mean(output) > mean_lim_bottom){
+          
+          #verificando a quantidade de linhas do df res
+          if (nrow(df_list[[c]]) < num_row){
+            df_list[[c]] = rbind(df_list[[c]], new_row)
+          
+          } #verificando se o coeficiente encontrado e maior que o mínimo
+          else if (sd(df[,col_num]) != 0 && sd(output) != 0 &&
+                   cor(df[,col_num], output) > min(df_list[[c]][,"coef.corr"])){
+            
+            #encontrando a linha  do valor minimo do coeficiente
+            j_min = match(min(df_list[[c]][,"coef.corr"]), df_list[[c]][,"coef.corr"])
+            
+            #removendo a linha do valor mínimo
+            df_list[[c]] = df_list[[c]][-j_min,]
+            
+            #adicionando o valor encontrado
+            df_list[[c]] = rbind(df_list[[c]], new_row)
+            
+            print(paste(colnames(df)[c], 'p, q, r, s: ', p, q, r, s))
+            print(paste('media_coef: ', media_coef))
+            
+            plot(input, output, xlab = colnames(df)[c])
+            plot(boa, xlab = colnames(df)[c])
+          }
         
-        #encontrando a linha  do valor minimo do coeficiente
-        j_min = match(min(df_list[[c]][,"coef.corr"]), df_list[[c]][,"coef.corr"])
+        }
+      
         
-        #removendo a linha do valor mínimo
-        df_list[[c]] = df_list[[c]][-j_min,]
+        #########       continues of improvement       #########################
+        ########################################################################
+      } else {
         
-        #adicionando o valor encontrado
-        df_list[[c]] = rbind(df_list[[c]], new_row)
+        ## selecionando aleatoriamente entre 'p' ou 's'
+        choice_param = sample(c('p', 's'), 1)
         
-        print(paste(colnames(df)[c], 'p, q, r, s: ', p, q, r, s))
-        print(paste('media_coef: ', media_coef))
+        arredond = 2  # qtd de casa decimais para os parametros
         
-        plot(input, output, xlab = colnames(df)[c])
-        plot(boa, xlab = colnames(df)[c])
+        p_col = df_list[[c]][,'p']
+        q_col = df_list[[c]][,'q']
+        r_col = df_list[[c]][,'r']
+        s_col = df_list[[c]][,'s']
+        
+        #verificando qual coeficiente foi escolhido
+        if (choice_param == 'p'){
+          #se foi 'p' gerando os parametros do menor para o maior
+          
+          #################     p       ##################################
+          p = round(rnorm(1, mean(p_col), desv_times*sd(p_col)), arredond)
+          if (p < min(input)){
+            p = min(input)
+          } else if (p > max(input)){
+            p = max(input)
+          }
+          
+          #################     q     ###################################
+          q = round(rnorm(1, mean(q_col), desv_times*sd(q_col)), arredond)
+          if (q < p){
+            q = p
+          } else if (q > max(input)){
+            q = max(input)
+          }
+          
+          #################     r     ###################################
+          r = round(rnorm(1, mean(r_col), desv_times*sd(r_col)), arredond)
+          if (r < q){
+            r = q
+          } else if (r > max(input)){
+            r = max(input)
+          }
+          
+          #################     s     ###################################
+          s = round(rnorm(1, mean(s_col), desv_times*sd(s_col)), arredond)
+          if (s < r){
+            s = r
+          } else if (s > max(input)){
+            s = max(input)
+          }
+          
+        } else {
+          #se foi o 's' gerando os parametros do maior para o menor
+          
+          #################     s     ###################################
+          s = round(rnorm(1, mean(s_col), desv_times*sd(s_col)), arredond)
+          if (s > max(input)){
+            s = max(input)
+          } else if (s < min(input)){
+            s = min(input)
+          }
+          
+          #################     r     ###################################
+          r = round(rnorm(1, mean(r_col), desv_times*sd(r_col)), arredond)
+          if (r > s){
+            r = s
+          } else if (r < min(input)){
+            r = min(input)
+          }
+          
+          #################     q     ###################################
+          q = round(rnorm(1, mean(q_col), desv_times*sd(q_col)), arredond)
+          if (q > r){
+            q = r
+          } else if (q < min(input)){
+            q = min(input)
+          }
+          
+          #################     p     ###################################
+          p = round(rnorm(1, mean(p_col), desv_times*sd(p_col)), arredond)
+          if (p > q){
+            p = q
+          } else if (p < min(input)){
+            p = min(input)
+          }
+          
+        }
+        
+        #gerando a função que mostra o grau de pertencimento ao conjunto de
+        #boas ações
+        boa = TrapezoidalFuzzyNumber(p, q, r, s)
+        
+        output = c()
+        for (ent in input) {
+          # Cálculo do grau de pertinência
+          membership_grade = ifelse(ent <= p | ent >= s, 0,
+                                    ifelse(ent >=q & ent <= r, 1,
+                                           ifelse(ent > p & ent < q,
+                                                  (ent - p) / (q - p),
+                                                  (s - ent) / (s - r))))
+          
+          # passando os valores para o output
+          output = c(output, membership_grade)
+        }
+        
+        #criando a possível nova linha do df res
+        
+        new_row = data.frame('indices' = colnames(df)[c], 'p' = p, 'q' = q, 'r' = r,
+                             's' = s, "coef.corr" = cor(df[,col_num], output))
+        
+        # veridicando se a correlação existe e se a media da imagem é maior que o lim
+        if (!is.na(cor(df[,col_num], output)) &&
+            (1 - mean_lim_bottom) > mean(output) && mean(output) > mean_lim_bottom){
+          
+          #verificando a quantidade de linhas do df res
+          if (nrow(df_list[[c]]) < num_row){
+            df_list[[c]] = rbind(df_list[[c]], new_row)
+            
+          } #verificando se o coeficiente encontrado e maior que o mínimo
+          else if (sd(df[,col_num]) != 0 && sd(output) != 0 &&
+                   cor(df[,col_num], output) > min(df_list[[c]][,"coef.corr"])){
+            
+            #encontrando a linha  do valor minimo do coeficiente
+            j_min = match(min(df_list[[c]][,"coef.corr"]), df_list[[c]][,"coef.corr"])
+            
+            #removendo a linha do valor mínimo
+            df_list[[c]] = df_list[[c]][-j_min,]
+            
+            #adicionando o valor encontrado
+            df_list[[c]] = rbind(df_list[[c]], new_row)
+            
+            print(paste(colnames(df)[c], 'p, q, r, s: ', p, q, r, s))
+            print(paste('media_coef: ', media_coef))
+            
+            plot(input, output, xlab = colnames(df)[c])
+            plot(boa, xlab = colnames(df)[c])
+          }
+          
+        }
+        
       }
-    
-    }
+     
     media_all = c()
     for (d in df_list) {
-      media_all = c(media_all, mean(d[,'coef.corr']))
+      media_all = c(media_all, max(d[,'coef.corr']))
     }
     media_coef = mean(media_all)
    }
@@ -671,4 +743,4 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
   
   return(df_list[1:length(df_list)])
 }
-look_fuzzy_set(crit_tri[[5]], col_obj = "v_price", 5, 0.25, 0.05)
+look_fuzzy_set(crit_tri[[5]], col_obj = "v_price", 5, 0.2, 0.05)
