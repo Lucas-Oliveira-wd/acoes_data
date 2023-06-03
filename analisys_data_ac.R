@@ -581,7 +581,6 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
             
             print(paste(colnames(df)[c], 'p, q, r, s: ', p, q, r, s))
             print(paste('media_coef: ', media_coef))
-            print(paste('media do output: ', mean(output)))
             
             plot(input, output, xlab = colnames(df)[c])
             plot(boa, xlab = colnames(df)[c])
@@ -878,7 +877,6 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
             
             print(paste(colnames(df)[c], 'p, q, r, s: ', p, q, r, s))
             print(paste('media_coef: ', media_coef))
-            print(paste('media do output: ', mean(output)))
             
             plot(input, output, xlab = colnames(df)[c])
             plot(boa, xlab = colnames(df)[c])
