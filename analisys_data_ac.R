@@ -487,6 +487,8 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
   
   col_num = match(col_obj, colnames(df))
   
+  arredond = 2  # qtd de casa decimais para os parametros
+  
   df_list = list()
   for (c in 1:ncol(df)){
     if (colnames(df)[c] != col_obj){
@@ -517,7 +519,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
         ## selecionando aleatoriamente entre 'p' ou 's'
         choice_param = sample(c('p', 's'), 1)
         
-        arredond = 2  # qtd de casa decimais para os parametros
+        
         
         #verificando qual coeficiente foi escolhido
         if (choice_param == 'p'){
@@ -596,7 +598,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
                              prob = c(1 - prob_runif, prob_runif))
         
         #pesos para a média ponderada
-        pesos = df_list[[c]][,'coef.corr']/sum(df_list[[c]][,'coef.corr'])
+        pesos = abs(df_list[[c]][,'coef.corr']/sum(df_list[[c]][,'coef.corr']))
         
         ## selecionando aleatoriamente entre 'p' ou 's'
         choice_param = sample(c('p', 's'), 1)
@@ -616,7 +618,25 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
           choice_path
           #verificando a escolha do caminho, runif ou rnorm
           if (choice_path == 'rnorm'){
-              p = round(rnorm(1, weighted.mean(p_col, pesos), desv_times*sd(p_col)), arredond)
+            #####   verificando se o desvio padrão é igual a zero
+            if (sd(p_col) == 0){
+              print('sd == 0')
+              if (mean(p_col) == 0){
+                print('sd == 0, mean == 0')
+                p = round(rnorm(1, sample(p_col, 1, prob = pesos),
+                                desv_times*diff(range(input))), arredond)
+              } else {
+                print('sd == 0, mean != 0')
+                p = round(rnorm(1, sample(p_col, 1,prob = pesos),
+                                sd = abs(mean(p_col))), arredond)
+              }
+            } else {
+              print('sd != 0')
+              p = round(rnorm(1, mean = sample(p_col, 1, prob = pesos),
+                              desv_times*sd(p_col)), arredond)
+            }
+            print(paste('pesos: ', pesos))
+            print(paste('bef (p < min) => p: ', p, 'min: ', min(input)))
             if (p < min(input)){
               p = min(input)
             } else if (p > max(input)){
@@ -631,7 +651,19 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
           choice_path
           #verificando a escolha do caminho, runif ou rnorm
           if (choice_path == 'rnorm'){
-              q = round(rnorm(1, weighted.mean(q_col, pesos), desv_times*sd(q_col)), arredond)
+            #####   verificando se o desvio padrão é igual a zero
+            if (sd(q_col) == 0){
+              if (mean(q_col) == 0){
+                q = round(rnorm(1, sample(q_col, 1, prob = pesos),
+                                desv_times*diff(range(input))), arredond)
+              } else {
+                q = round(rnorm(1, sample(q_col, 1, prob = pesos),
+                                abs(mean(q_col))), arredond)
+              }
+            } else {
+              q = round(rnorm(1, sample( q_col, 1, prob = pesos),
+                              desv_times*sd(q_col)), arredond)
+            }
             if (q < p){
               q = p
             } else if (q > max(input)){
@@ -646,7 +678,19 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
           choice_path
           #verificando a escolha do caminho, runif ou rnorm
           if (choice_path == 'rnorm'){
-              r = round(rnorm(1, weighted.mean(r_col, pesos), desv_times*sd(r_col)), arredond)
+            #####   verificando se o desvio padrão é igual a zero
+            if (sd(r_col) == 0){
+              if (mean(r_col) == 0){
+                r = round(rnorm(1, sample(r_col, 1, prob = pesos),
+                                desv_times*diff(range(input))), arredond)
+              } else {
+                r = round(rnorm(1, sample(r_col, 1, prob = pesos),
+                                abs(mean(r_col))), arredond)
+              }
+            } else {
+              r = round(rnorm(1, sample(r_col, 1, prob = pesos),
+                              desv_times*sd(r_col)), arredond)
+            }
             if (r < q){
               r = q
             } else if (r > max(input)){
@@ -661,7 +705,19 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
           choice_path
           #verificando a escolha do caminho, runif ou rnorm
           if (choice_path == 'rnorm'){
-              s = round(rnorm(1, weighted.mean(s_col, pesos), desv_times*sd(s_col)), arredond)
+            #####   verificando se o desvio padrão é igual a zero
+            if (sd(s_col) == 0){
+              if (mean(s_col) == 0){
+                s = round(rnorm(1, sample(s_col, 1, prob = pesos),
+                                desv_times*diff(range(input))), arredond)
+              } else {
+                s = round(rnorm(1, sample(s_col, 1, prob = pesos),
+                                abs(mean(s_col))), arredond)
+              }
+            } else {
+              s = round(rnorm(1, sample(s_col, 1, prob = pesos),
+                              desv_times*sd(s_col)), arredond)
+            }
             if (s < r){
               s = r
             } else if (s > max(input)){
@@ -679,7 +735,19 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
           choice_path
           #verificando a escolha do caminho, runif ou rnorm
           if (choice_path == 'rnorm'){
-              s = round(rnorm(1, weighted.mean(s_col, pesos), desv_times*sd(s_col)), arredond)
+            #####   verificando se o desvio padrão é igual a zero
+            if (sd(s_col) == 0){
+              if (mean(s_col) == 0){
+                s = round(rnorm(1, sample(s_col, 1, prob = pesos),
+                                desv_times*diff(range(input))), arredond)
+              } else {
+                s = round(rnorm(1, sample(s_col, 1, prob = pesos),
+                                abs(mean(s_col))), arredond)
+              }
+            } else {
+              s = round(rnorm(1, sample(s_col, 1, prob = pesos),
+                              desv_times*sd(s_col)), arredond)
+            }
             if (s > max(input)){
               s = max(input)
             } else if (s < min(input)){
@@ -694,7 +762,19 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
           choice_path
           #verificando a escolha do caminho, runif ou rnorm
           if (choice_path == 'rnorm'){
-              r = round(rnorm(1, weighted.mean(r_col, pesos), desv_times*sd(r_col)), arredond)
+            #####   verificando se o desvio padrão é igual a zero
+            if (sd(r_col) == 0){
+              if (mean(r_col) == 0){
+                r = round(rnorm(1, sample(r_col, 1, prob = pesos),
+                                desv_times*diff(range(input))), arredond)
+              } else {
+                r = round(rnorm(1, sample(r_col, 1, prob = pesos),
+                                abs(mean(r_col))), arredond)
+              }
+            } else {
+              r = round(rnorm(1, sample(r_col, 1, prob = pesos),
+                              desv_times*sd(r_col)), arredond)
+            }
             if (r > s){
               r = s
             } else if (r < min(input)){
@@ -709,7 +789,19 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
           choice_path
           #verificando a escolha do caminho, runif ou rnorm
           if (choice_path == 'rnorm'){
-              q = round(rnorm(1, weighted.mean(q_col, pesos), desv_times*sd(q_col)), arredond)
+            #####   verificando se o desvio padrão é igual a zero
+            if (sd(q_col) == 0){
+              if (mean(q_col) == 0){
+                q = round(rnorm(1, sample(q_col, 1, prob = pesos),
+                                desv_times*diff(range(input))), arredond)
+              } else {
+                q = round(rnorm(1, sample(q_col, 1, prob = pesos),
+                                abs(mean(q_col))), arredond)
+              }
+            } else {
+              q = round(rnorm(1, sample(q_col, 1, prob = pesos),
+                              desv_times*sd(q_col)), arredond)
+            }
             if (q > r){
               q = r
             } else if (q < min(input)){
@@ -724,7 +816,27 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
           choice_path
           #verificando a escolha do caminho, runif ou rnorm
           if (choice_path == 'rnorm'){
-              p = round(rnorm(1, weighted.mean(p_col, pesos), desv_times*sd(p_col)), arredond)
+            #####   verificando se o desvio padrão é igual a zero
+            if (sd(p_col) == 0){
+              print('sd == 0')
+              if (mean(p_col) == 0){
+                print('sd == 0, mean == 0')
+                p = round(rnorm(1, sample(p_col, 1, prob = pesos),
+                                desv_times*diff(range(input))), arredond)
+              } else {
+                print('sd == 0, mean != 0')
+                media = sample(p_col, 1, prob = pesos)
+                p = round(rnorm(1, media,
+                                sd = abs(mean(p_col))), arredond)
+                print(paste('media: ', media))
+              }
+            } else {
+              print('sd != 0')
+              p = round(rnorm(1, sample(p_col, 1, prob = pesos),
+                              desv_times*sd(p_col)), arredond)
+            }
+            print(paste('pesos: ', pesos))
+            print(paste('bef (p > q) => p: ', p, 'q: ', q))
             if (p > q){
               p = q
             } else if (p < min(input)){
@@ -805,7 +917,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
   
   return(df_list[1:length(df_list)])
 }
-look_fuzzy_set(crit_tri[[5]], col_obj = "v_price", 5, 0.3, 0.05)
+look_fuzzy_set(crit_tri[[5]], colnames(crit_tri[[5]])[20], 5, 0.3, 0.05)
 
 
 ##############        to do         ############################################
