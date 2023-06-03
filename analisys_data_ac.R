@@ -579,6 +579,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
             
             print(paste(colnames(df)[c], 'p, q, r, s: ', p, q, r, s))
             print(paste('media_coef: ', media_coef))
+            print(paste('media do output: ', mean(output)))
             
             plot(input, output, xlab = colnames(df)[c])
             plot(boa, xlab = colnames(df)[c])
@@ -594,9 +595,9 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
         choice_path = sample(c('rnorm', 'runif'), 1,
                              prob = c(1 - prob_runif, prob_runif))
         
-        ## encontrando a linha do melhor coeficiente
-        j_best_coef = match(max(df_list[[c]][,'coef.corr']),
-                            df_list[[c]][,'coef.corr'])
+        #pesos para a média ponderada
+        pesos = df_list[[c]][,'coef.corr']/sum(df_list[[c]][,'coef.corr'])
+        
         ## selecionando aleatoriamente entre 'p' ou 's'
         choice_param = sample(c('p', 's'), 1)
         
@@ -615,7 +616,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
           choice_path
           #verificando a escolha do caminho, runif ou rnorm
           if (choice_path == 'rnorm'){
-              p = round(rnorm(1, mean(p_col), desv_times*sd(p_col)), arredond)
+              p = round(rnorm(1, weighted.mean(p_col, pesos), desv_times*sd(p_col)), arredond)
             if (p < min(input)){
               p = min(input)
             } else if (p > max(input)){
@@ -630,7 +631,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
           choice_path
           #verificando a escolha do caminho, runif ou rnorm
           if (choice_path == 'rnorm'){
-              q = round(rnorm(1, mean(q_col), desv_times*sd(q_col)), arredond)
+              q = round(rnorm(1, weighted.mean(q_col, pesos), desv_times*sd(q_col)), arredond)
             if (q < p){
               q = p
             } else if (q > max(input)){
@@ -645,7 +646,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
           choice_path
           #verificando a escolha do caminho, runif ou rnorm
           if (choice_path == 'rnorm'){
-              r = round(rnorm(1, mean(r_col), desv_times*sd(r_col)), arredond)
+              r = round(rnorm(1, weighted.mean(r_col, pesos), desv_times*sd(r_col)), arredond)
             if (r < q){
               r = q
             } else if (r > max(input)){
@@ -660,7 +661,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
           choice_path
           #verificando a escolha do caminho, runif ou rnorm
           if (choice_path == 'rnorm'){
-              s = round(rnorm(1, mean(s_col), desv_times*sd(s_col)), arredond)
+              s = round(rnorm(1, weighted.mean(s_col, pesos), desv_times*sd(s_col)), arredond)
             if (s < r){
               s = r
             } else if (s > max(input)){
@@ -678,7 +679,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
           choice_path
           #verificando a escolha do caminho, runif ou rnorm
           if (choice_path == 'rnorm'){
-              s = round(rnorm(1, mean(s_col), desv_times*sd(s_col)), arredond)
+              s = round(rnorm(1, weighted.mean(s_col, pesos), desv_times*sd(s_col)), arredond)
             if (s > max(input)){
               s = max(input)
             } else if (s < min(input)){
@@ -693,7 +694,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
           choice_path
           #verificando a escolha do caminho, runif ou rnorm
           if (choice_path == 'rnorm'){
-              r = round(rnorm(1, mean(r_col), desv_times*sd(r_col)), arredond)
+              r = round(rnorm(1, weighted.mean(r_col, pesos), desv_times*sd(r_col)), arredond)
             if (r > s){
               r = s
             } else if (r < min(input)){
@@ -708,7 +709,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
           choice_path
           #verificando a escolha do caminho, runif ou rnorm
           if (choice_path == 'rnorm'){
-              q = round(rnorm(1, mean(q_col), desv_times*sd(q_col)), arredond)
+              q = round(rnorm(1, weighted.mean(q_col, pesos), desv_times*sd(q_col)), arredond)
             if (q > r){
               q = r
             } else if (q < min(input)){
@@ -723,7 +724,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
           choice_path
           #verificando a escolha do caminho, runif ou rnorm
           if (choice_path == 'rnorm'){
-              p = round(rnorm(1, mean(p_col), desv_times*sd(p_col)), arredond)
+              p = round(rnorm(1, weighted.mean(p_col, pesos), desv_times*sd(p_col)), arredond)
             if (p > q){
               p = q
             } else if (p < min(input)){
@@ -779,6 +780,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
             
             print(paste(colnames(df)[c], 'p, q, r, s: ', p, q, r, s))
             print(paste('media_coef: ', media_coef))
+            print(paste('media do output: ', mean(output)))
             
             plot(input, output, xlab = colnames(df)[c])
             plot(boa, xlab = colnames(df)[c])
@@ -803,14 +805,12 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
   
   return(df_list[1:length(df_list)])
 }
-look_fuzzy_set(crit_tri[[5]], col_obj = "v_price", 5, 0.2, 0.05)
+look_fuzzy_set(crit_tri[[5]], col_obj = "v_price", 5, 0.3, 0.05)
 
 
 ##############        to do         ############################################
 
 # verificar diferentes formas de buscar os valores
 # 1 - rnorm com media igual sample dos valores ja encontrados
-# 2 - adicionar o runif para ser rodado numa prob baixa
-# 3 - rnorm com a média igual ao valor que gerou o maior coeficiente
 # 4 - rnomr com a média ponderada em relação aos coeficientes
 
