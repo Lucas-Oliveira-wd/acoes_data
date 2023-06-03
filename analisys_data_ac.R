@@ -620,23 +620,17 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
           if (choice_path == 'rnorm'){
             #####   verificando se o desvio padrão é igual a zero
             if (sd(p_col) == 0){
-              print('sd == 0')
               if (mean(p_col) == 0){
-                print('sd == 0, mean == 0')
                 p = round(rnorm(1, sample(p_col, 1, prob = pesos),
                                 desv_times*diff(range(input))), arredond)
               } else {
-                print('sd == 0, mean != 0')
                 p = round(rnorm(1, sample(p_col, 1,prob = pesos),
                                 sd = abs(mean(p_col))), arredond)
               }
             } else {
-              print('sd != 0')
               p = round(rnorm(1, mean = sample(p_col, 1, prob = pesos),
                               desv_times*sd(p_col)), arredond)
             }
-            print(paste('pesos: ', pesos))
-            print(paste('bef (p < min) => p: ', p, 'min: ', min(input)))
             if (p < min(input)){
               p = min(input)
             } else if (p > max(input)){
@@ -818,25 +812,17 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
           if (choice_path == 'rnorm'){
             #####   verificando se o desvio padrão é igual a zero
             if (sd(p_col) == 0){
-              print('sd == 0')
               if (mean(p_col) == 0){
-                print('sd == 0, mean == 0')
                 p = round(rnorm(1, sample(p_col, 1, prob = pesos),
                                 desv_times*diff(range(input))), arredond)
               } else {
-                print('sd == 0, mean != 0')
-                media = sample(p_col, 1, prob = pesos)
-                p = round(rnorm(1, media,
+                p = round(rnorm(1, sample(p_col, 1, prob = pesos),
                                 sd = abs(mean(p_col))), arredond)
-                print(paste('media: ', media))
               }
             } else {
-              print('sd != 0')
               p = round(rnorm(1, sample(p_col, 1, prob = pesos),
                               desv_times*sd(p_col)), arredond)
             }
-            print(paste('pesos: ', pesos))
-            print(paste('bef (p > q) => p: ', p, 'q: ', q))
             if (p > q){
               p = q
             } else if (p < min(input)){
