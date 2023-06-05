@@ -521,7 +521,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
   ## criando o indice de coluna
   
   c = 1
-  while(round(mean(prob_runif),2) < 0.90){
+  while(round(mean(prob_runif),3) < 0.8){
     
     if (colnames(df)[c] != col_obj){
       input = df[,c]
@@ -886,7 +886,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
           plot(boa, xlab = colnames(df)[c])
         }
         
-        else if (prob_runif[c] < 0.9){
+        else if (prob_runif[c] < 0.8){
             prob_runif[c] = prob_runif[c]+(0.05/accurate)
           }
       
@@ -903,7 +903,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
   
   return(df_list[1:length(df_list)])
 }
-look_fuzzy_set(crit_tri[[5]], "v_price", 5, 10, 0.2)
+look_fuzzy_set(crit_tri[[5]], "v_price", 5, 30, 0.2)
 
 
 
