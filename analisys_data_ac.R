@@ -160,11 +160,20 @@ for (per in 1:length(ult_bal_dates)){
   lynch = round((divY_t+(cres_rec5/5))/pl, 2)
   lynch3 = round((divY_t/3+(cres_rec5/15))/pl3, 2)
   div_lucm = round(divb/(as.numeric(Lucl3)/3), 2)
+  psr_inv = round((recl12/n_ac)/cotAtual_t, 2)
+  psr_inv3 = round((as.numeric(recl3)/n_ac)/cotAtual_t, 2)
+  ebit_p = round((ebit12/n_ac)/cotAtual_t, 2)
+  ebit_p3 = round((as.numeric(ebit3)/n_ac), 2)
+  ebit_ativ = round(ebit12/ativ, 2)
+  ebit_ativ3 = round((as.numeric(ebit3)/ativ), 2)
+  divb_pat = round(divb/patl, 2)
   
   
   crit = data.frame(lp, lp3, vp, roe, roe3, roic, cxa_p, ativc_p, ativ_p,
                     div_cxa, marg_ebit, marg_ebit3 ,marg_liq, marg_liq3,
-                    cres_rec5 ,divY_t ,lynch, lynch3, div_lucm,
+                    cres_rec5 ,divY_t ,lynch, lynch3, div_lucm, psr_inv,
+                    psr_inv3, ebit_p, ebit_p3, ebit_ativ, ebit_ativ3,
+                    divb_pat, 
                     row.names = codigo)
   
   #############       filtrando o db        ###################################
@@ -245,7 +254,9 @@ for (per in 1:length(ult_bal_dates)){
                      "(Ativos/Ação)/Preço", "Dív Bruta/Caixa", "Marg. EBIT",
                      'Marg. EBIT (tri)', "Marg. Líquida", 'Marg. Líquida (tri)',
                      "Cresc. Rec. (5 Anos)", "Dividendyield", "Lynch",
-                    'Lynch (tri)',  "Dív. Bruta/Lucro Mensal")
+                    'Lynch (tri)',  "Dív. Bruta/Lucro Mensal", 'PSR (invertido)',
+                    'PSR (invertido) (tri)', 'EBIT/P', 'EBIT/P (tri)',
+                    'EBIT/Ativo', 'EBIT/Ativo (tri)', 'Div Bruta/Patrimonio')
   
   #gridExtra::grid.table(crit %>% slice(1:20))
   
@@ -317,13 +328,14 @@ for (r in 1:nrow(crit_tri[[5]])) {
 # adicionando as variações dos precos ao df crit do 5 periodo
 crit_tri[[5]]$v_price = var_price
 
-colnames(crit_tri[[5]]) = c("L/P", 'L/P (tri)', "VPA/P", "ROE" , 'ROE (tri)',
-                            "ROIC",
-                   "(Caixa/Ação)/Preço", "(Ativos Circulantes/Ação)/Preço",
-                   "(Ativos/Ação)/Preço", "Dív Bruta/Caixa", "Marg. EBIT",
-                   'Marg. EBIT (tri)', "Marg. Líquida", 'Marg. Líquida (tri)',
-                   "Cresc. Rec. (5 Anos)", "Dividendyield", "Lynch",
-                   'Lynch (tri)',  "Dív. Bruta/Lucro Mensal", "v_price")
+colnames(crit_tri[[5]]) = c("L/P", 'L/P (tri)', "VPA/P", "ROE" , 'ROE (tri)', "ROIC",
+                             "(Caixa/Ação)/Preço", "(Ativos Circulantes/Ação)/Preço",
+                             "(Ativos/Ação)/Preço", "Dív Bruta/Caixa", "Marg. EBIT",
+                             'Marg. EBIT (tri)', "Marg. Líquida", 'Marg. Líquida (tri)',
+                             "Cresc. Rec. (5 Anos)", "Dividendyield", "Lynch",
+                             'Lynch (tri)',  "Dív. Bruta/Lucro Mensal", 'PSR (invertido)',
+                             'PSR (invertido) (tri)', 'EBIT/P', 'EBIT/P (tri)',
+                             'EBIT/Ativo', 'EBIT/Ativo (tri)', 'Div Bruta/Patrimonio', "v_price")
 
 
 #################         coeficiente de correlação         ####################
