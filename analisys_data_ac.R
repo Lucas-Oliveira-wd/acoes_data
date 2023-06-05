@@ -470,7 +470,7 @@ for (i in 1:length(best10)){
 }
 
 
-##################      Fuzzy Sets    #########################################
+##################            Fuzzy Sets           #############################
 library(FuzzyNumbers)
 library(devtools)
 
@@ -480,25 +480,31 @@ library(devtools)
 # 1 - data.frame para ser encontrando as funções trapezoidais
 # 2 - coluna objetivo, para ser comparada com as outras
 # 3 - numero de linhas do resultado
-# 4 - valor dos coeficientes acumulados
+# 4 - valor da acurácia , quanto maior, maior a acurácia, (accur > 1)
 # 5 - valor mínimo para a média dos outputs da função fuzzy (< 0.5)
 
-look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
+look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
   
   col_num = match(col_obj, colnames(df))
   
   arredond = 2  # qtd de casa decimais para os parametros
   
+  # lista para conter as probabiblidades dos runifs
+  prob_runif = c()
+  
+  # lista para conter os df com os valores dos paramentros
   df_list = list()
   for (c in 1:ncol(df)){
     if (colnames(df)[c] != col_obj){
       df_list[[c]] = data.frame(matrix(ncol = 6, nrow = 0))
       colnames(df_list[[c]]) = c("indices", "p", "q", "r", "s", "coef.corr")
+      
+      prob_runif = c(prob_runif, 0) # valor deve ser menor que 0.9
+                                      # por causa do break  
     }
   }
   
-  print(paste('length(df_list) :', length(df_list)))
-  media_coef = 0
+  
   
   repeat{
   
@@ -510,31 +516,23 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
       #############       improve parameters search       ######################
       ##########################################################################
       
-      desv_times = 10  #multiplicador do desvio padrão, quanto maior, maior
+      desv_times = 0.5  #multiplicador do desvio padrão, quanto maior, maior
                       #será a chance de encontrar outros valores fora da
                       #distribuição
       
       if (nrow(df_list[[c]]) < num_row){
-             
-        ## selecionando aleatoriamente entre 'p' ou 's'
-        choice_param = sample(c('p', 's'), 1)
         
         
         
-        #verificando qual coeficiente foi escolhido
-        if (choice_param == 'p'){
-          #se foi 'p' gerando os parametros do menor para o maior
-          p = round(runif(1, min(input), max(input)), arredond)
-          q = round(runif(1, p, max(input)), arredond)
-          r = round(runif(1, q, max(input)), arredond)
-          s = round(runif(1, r, max(input)), arredond)
-        } else {
-          #se foi o 's' gerando os parametros do maior para o menor
-          s = round(runif(1,min(input), max(input)), arredond)
-          r = round(runif(1,min(input), s), arredond)
-          q = round(runif(1,min(input), r), arredond)
-          p = round(runif(1,min(input), q), arredond)
-        }
+        # Calculando os 5 percentis
+        percentis <- quantile(input, probs = seq(0, 1, 1/5)) # 1/5 é para
+                                                     #encontrar 4 valores
+        
+        # definindo os valores iniciais dos parametros
+        p = round(percentis[2], arredond)
+        q = round(percentis[3], arredond)
+        r = round(percentis[4], arredond)
+        s = round(percentis[5], arredond)
         
         #gerando a função que mostra o grau de pertencimento ao conjunto de
         #boas ações
@@ -570,6 +568,8 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
           else if (sd(df[,col_num]) != 0 && sd(output) != 0 &&
                    cor(df[,col_num], output) > min(df_list[[c]][,"coef.corr"])){
             
+            # aumentando a probabilidade do rnorm
+            
             #encontrando a linha  do valor minimo do coeficiente
             j_min = match(min(df_list[[c]][,"coef.corr"]), df_list[[c]][,"coef.corr"])
             
@@ -581,6 +581,8 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
             
             print(paste(colnames(df)[c], 'p, q, r, s: ', p, q, r, s))
             print(paste('media_coef: ', media_coef))
+            print(Sys.time())
+            print(paste("mean(output): ", mean(output)))
             
             plot(input, output, xlab = colnames(df)[c])
             plot(boa, xlab = colnames(df)[c])
@@ -592,9 +594,9 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
         #########       continues of improvement       #########################
         ########################################################################
       } else {
-        prob_runif = 0.3 # probabilidade de vir um runif
         choice_path = sample(c('rnorm', 'runif'), 1,
-                             prob = c(1 - prob_runif, prob_runif))
+                             prob = c(1 - round(prob_runif[c],1),
+                                      round(prob_runif[c],1)))
         
         #pesos para a média ponderada
         pesos = abs(df_list[[c]][,'coef.corr']/sum(df_list[[c]][,'coef.corr']))
@@ -609,6 +611,13 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
         r_col = df_list[[c]][,'r']
         s_col = df_list[[c]][,'s']
         
+        #para evitar runifs com parametros menores ou maiores que o limite
+        # definindo os limites para os parametros
+        # from bottom to top
+        limit_max = sort(input)[length(input) - length(input)*mean_lim_bottom]
+        limit_min = sort(input)[(1-mean_lim_bottom)*length(input)]
+        
+        
         #verificando qual coeficiente foi escolhido
         if (choice_param == 'p'){
           #se foi 'p' gerando os parametros do menor para o maior
@@ -621,7 +630,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
             if (sd(p_col) == 0){
               if (mean(p_col) == 0){
                 p = round(rnorm(1, sample(p_col, 1, prob = pesos),
-                                desv_times*diff(range(input))), arredond)
+                                diff(range(input))), arredond)
               } else {
                 p = round(rnorm(1, sample(p_col, 1,prob = pesos),
                                 sd = abs(mean(p_col))), arredond)
@@ -636,7 +645,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
               p = max(input)
             }
           } else {
-            p = round(runif(1, min(input), max(input)), arredond)
+            p = round(runif(1, min(input), limit_max), arredond)
           }
           
           
@@ -648,7 +657,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
             if (sd(q_col) == 0){
               if (mean(q_col) == 0){
                 q = round(rnorm(1, sample(q_col, 1, prob = pesos),
-                                desv_times*diff(range(input))), arredond)
+                                diff(range(input))), arredond)
               } else {
                 q = round(rnorm(1, sample(q_col, 1, prob = pesos),
                                 abs(mean(q_col))), arredond)
@@ -663,7 +672,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
               q = max(input)
             }
           } else {
-            q = round(runif(1, p, max(input)), arredond)
+            q = ifelse(p>=limit_max,p,round(runif(1,p,max(input)), arredond))
           }
           
           
@@ -675,7 +684,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
             if (sd(r_col) == 0){
               if (mean(r_col) == 0){
                 r = round(rnorm(1, sample(r_col, 1, prob = pesos),
-                                desv_times*diff(range(input))), arredond)
+                                diff(range(input))), arredond)
               } else {
                 r = round(rnorm(1, sample(r_col, 1, prob = pesos),
                                 abs(mean(r_col))), arredond)
@@ -702,7 +711,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
             if (sd(s_col) == 0){
               if (mean(s_col) == 0){
                 s = round(rnorm(1, sample(s_col, 1, prob = pesos),
-                                desv_times*diff(range(input))), arredond)
+                                diff(range(input))), arredond)
               } else {
                 s = round(rnorm(1, sample(s_col, 1, prob = pesos),
                                 abs(mean(s_col))), arredond)
@@ -732,7 +741,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
             if (sd(s_col) == 0){
               if (mean(s_col) == 0){
                 s = round(rnorm(1, sample(s_col, 1, prob = pesos),
-                                desv_times*diff(range(input))), arredond)
+                                diff(range(input))), arredond)
               } else {
                 s = round(rnorm(1, sample(s_col, 1, prob = pesos),
                                 abs(mean(s_col))), arredond)
@@ -747,7 +756,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
               s = min(input)
             }
           } else {
-            s = round(runif(1,min(input), max(input)), arredond)
+            s = round(runif(1, limit_min, max(input)), arredond)
           }
           
           
@@ -759,7 +768,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
             if (sd(r_col) == 0){
               if (mean(r_col) == 0){
                 r = round(rnorm(1, sample(r_col, 1, prob = pesos),
-                                desv_times*diff(range(input))), arredond)
+                                diff(range(input))), arredond)
               } else {
                 r = round(rnorm(1, sample(r_col, 1, prob = pesos),
                                 abs(mean(r_col))), arredond)
@@ -774,7 +783,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
               r = min(input)
             }
           } else {
-            r = round(runif(1,min(input), s), arredond)
+            r = ifelse(s<=limit_min,s,round(runif(1,min(input),s),arredond))
           }
           
           
@@ -786,7 +795,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
             if (sd(q_col) == 0){
               if (mean(q_col) == 0){
                 q = round(rnorm(1, sample(q_col, 1, prob = pesos),
-                                desv_times*diff(range(input))), arredond)
+                                diff(range(input))), arredond)
               } else {
                 q = round(rnorm(1, sample(q_col, 1, prob = pesos),
                                 abs(mean(q_col))), arredond)
@@ -813,7 +822,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
             if (sd(p_col) == 0){
               if (mean(p_col) == 0){
                 p = round(rnorm(1, sample(p_col, 1, prob = pesos),
-                                desv_times*diff(range(input))), arredond)
+                                diff(range(input))), arredond)
               } else {
                 p = round(rnorm(1, sample(p_col, 1, prob = pesos),
                                 sd = abs(mean(p_col))), arredond)
@@ -831,6 +840,7 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
             p = round(runif(1,min(input), q), arredond)
           }
         }
+        
         
         #gerando a função que mostra o grau de pertencimento ao conjunto de
         #boas ações
@@ -875,11 +885,26 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
             #adicionando o valor encontrado
             df_list[[c]] = rbind(df_list[[c]], new_row)
             
+            # recolocando o valor do prob_runif para 0.1
+            prob_runif[c] = 0.1
+            
             print(paste(colnames(df)[c], 'p, q, r, s: ', p, q, r, s))
             print(paste('media_coef: ', media_coef))
+            print(Sys.time())
+            print(paste("mean(output): ", mean(output)))
             
             plot(input, output, xlab = colnames(df)[c])
             plot(boa, xlab = colnames(df)[c])
+          }
+          
+          
+          else if (sd(df[,col_num]) != 0 && sd(output) != 0 &&
+                     cor(df[,col_num], output) < min(df_list[[c]][,"coef.corr"])){
+            #aumentando o prob_runif
+            #verificando se o prob_unif já esta no valor máximo
+            if (prob_runif[c] < 0.9){
+              prob_runif[c] = prob_runif[c]+(0.05/accurate)
+            }
           }
           
         }
@@ -893,20 +918,14 @@ look_fuzzy_set = function(df, col_obj, num_row, coef_val, mean_lim_bottom) {
     media_coef = mean(media_all)
    }
   }
-    
-    if (!is.nan(media_coef) && media_coef > coef_val){
+    if (round(mean(prob_runif),2) == 0.90){
       break
-    }
+    } 
   }
   
   return(df_list[1:length(df_list)])
 }
-look_fuzzy_set(crit_tri[[5]], colnames(crit_tri[[5]])[20], 5, 0.3, 0.05)
+look_fuzzy_set(crit_tri[[5]], colnames(crit_tri[[5]])[20], 5, 10, 0.1)
 
 
-##############        to do         ############################################
-
-# verificar diferentes formas de buscar os valores
-# 1 - rnorm com media igual sample dos valores ja encontrados
-# 4 - rnomr com a média ponderada em relação aos coeficientes
 
