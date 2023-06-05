@@ -317,6 +317,14 @@ for (r in 1:nrow(crit_tri[[5]])) {
 # adicionando as variações dos precos ao df crit do 5 periodo
 crit_tri[[5]]$v_price = var_price
 
+colnames(crit_tri[[5]]) = c("L/P", 'L/P (tri)', "VPA/P", "ROE" , 'ROE (tri)',
+                            "ROIC",
+                   "(Caixa/Ação)/Preço", "(Ativos Circulantes/Ação)/Preço",
+                   "(Ativos/Ação)/Preço", "Dív Bruta/Caixa", "Marg. EBIT",
+                   'Marg. EBIT (tri)', "Marg. Líquida", 'Marg. Líquida (tri)',
+                   "Cresc. Rec. (5 Anos)", "Dividendyield", "Lynch",
+                   'Lynch (tri)',  "Dív. Bruta/Lucro Mensal", "v_price")
+
 
 #################         coeficiente de correlação         ####################
 library(openxlsx)
@@ -487,6 +495,11 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
   
   col_num = match(col_obj, colnames(df))
   
+  if (mean_lim_bottom >= 0.5 || mean_lim_bottom < 0){
+    stop('erro: mean_lim_bottom deve ser maior que 0 e menor que
+                   0.5')
+  }
+  
   arredond = 2  # qtd de casa decimais para os parametros
   
   # lista para conter as probabiblidades dos runifs
@@ -509,7 +522,6 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
   repeat{
   
   for (c in 1:(length(colnames(df))-1)) {
-    print(paste('indice: ', colnames(df)[c]))
     
     if (colnames(df)[c] != col_obj){
       input = df[,c]
@@ -517,7 +529,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
       #############       improve parameters search       ######################
       ##########################################################################
       
-      desv_times = 5  #multiplicador do desvio padrão, quanto maior, maior
+      desv_times = 0.5  #multiplicador do desvio padrão, quanto maior, maior
                       #será a chance de encontrar outros valores fora da
                       #distribuição
       
@@ -591,7 +603,6 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
         
         #verificando qual coeficiente foi escolhido
         if (choice_param == 'p'){
-          print('p first')
           #se foi 'p' gerando os parametros do menor para o maior
           
           #################     p       ##################################
@@ -617,8 +628,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
               p = max(input)
             }
           } else {
-            p = round(sample(sort(input)[1:match(limit_max,sort(input))], 1),
-                    arredond)
+            p = sample(sort(input)[1:match(limit_max,sort(input))], 1)
           }
           
           
@@ -646,8 +656,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
             }
           } else {
             q = ifelse(p>=limit_max,p,
-        round(sample(sort(input)[match(p,sort(input)):length(input)], 1),
-              arredond))
+        sample(sort(input)[match(p,sort(input)):length(input)], 1))
           }
           
           
@@ -674,9 +683,10 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
               r = max(input)
             }
           } else {
-            print('r by sample')
-          r = round(sample(sort(input)[match(q,sort(input)):length(input)], 1),
-                             arredond)
+          r = sample(sort(input)[match(q,sort(input)):length(input)], 1)
+            if (r < q){
+              r = q
+            }
           }
           
           
@@ -703,23 +713,13 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
               s = max(input)
             }
           } else {
-            print('s by sample')
-            print(paste('r: ', r))
-            print(paste('match(r,sort(input)): ', match(r,sort(input))))
-            print(paste('sort(input)[match(r,sort(input)):length(input)]: ',
-                        sort(input)[match(r,sort(input)):length(input)]))
-            print(paste('sample(sort(input)[match(r,sort(input)):length(input)], 1): ',
-                        sample(sort(input)[match(r,sort(input)):length(input)], 1)))
-          s = round(sample(sort(input)[match(r,sort(input)):length(input)], 1),
-                    arredond)
-          }
-          if (s < r){
-            s = r
+            s = sample(sort(input)[match(r,sort(input)):length(input)], 1)
+            if (s < r){
+              s = r
+            }
           } 
           
         } else {
-          
-          print('s first')
           #se foi o 's' gerando os parametros do maior para o menor
           
           #################     s     ###################################
@@ -832,11 +832,6 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
           }
         }
         
-        print(paste('p: ', p))
-        print(paste('q: ', q))
-        print(paste('r: ', r))
-        print(paste('s: ', s))
-        
         
         #gerando a função que mostra o grau de pertencimento ao conjunto de
         #boas ações
@@ -855,47 +850,46 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
           output = c(output, membership_grade)
         }
         
+        # condições para ir para a próxima iteração
+        if ((1 - mean_lim_bottom) < mean(output) ||
+          mean(output) < mean_lim_bottom || is.na(cor(df[,col_num], output)) ||
+          sd(df[,col_num]) == 0 || sd(output) == 0){
+          next
+        }
+        
         #criando a possível nova linha do df res
         
         new_row = data.frame('indices' = colnames(df)[c], 'p' = p, 'q' = q, 'r' = r,
                              's' = s, "coef.corr" = cor(df[,col_num], output))
-        
-        # veridicando se a correlação existe e se a media da imagem é maior que o lim
-        if (!is.na(cor(df[,col_num], output)) &&
-            (1 - mean_lim_bottom) > mean(output) && mean(output) > mean_lim_bottom){
           
-           #verificando se o coeficiente encontrado e maior que o mínimo
-          if (sd(df[,col_num]) != 0 && sd(output) != 0 &&
-                   cor(df[,col_num], output) > min(df_list[[c]][,"coef.corr"])){
-            
-            #encontrando a linha  do valor minimo do coeficiente
-            j_min = match(min(df_list[[c]][,"coef.corr"]), df_list[[c]][,"coef.corr"])
-            
-            #removendo a linha do valor mínimo
-            df_list[[c]] = df_list[[c]][-j_min,]
-            
-            #adicionando o valor encontrado
-            df_list[[c]] = rbind(df_list[[c]], new_row)
-            
-            # recolocando o valor do prob_runif para 0.1
-            prob_runif[c] = 0.1
-            
-            print(paste(colnames(df)[c], 'p, q, r, s: ', p, q, r, s))
-            print(paste('media_coef: ', media_coef))
-            print(Sys.time())
-            print(paste("mean(output): ", mean(output)))
-            
-            plot(input, output, xlab = colnames(df)[c])
-            plot(boa, xlab = colnames(df)[c])
-          }
+         #verificando se o coeficiente encontrado e maior que o mínimo
+        if (cor(df[,col_num], output) > min(df_list[[c]][,"coef.corr"])){
           
+          #encontrando a linha  do valor minimo do coeficiente
+          j_min = match(min(df_list[[c]][,"coef.corr"]), df_list[[c]][,"coef.corr"])
           
-          else if (prob_runif[c] < 0.9){
-              prob_runif[c] = prob_runif[c]+(0.05/accurate)
-            }
+          #removendo a linha do valor mínimo
+          df_list[[c]] = df_list[[c]][-j_min,]
           
+          #adicionando o valor encontrado
+          df_list[[c]] = rbind(df_list[[c]], new_row)
+          
+          # recolocando o valor do prob_runif para 0.1
+          prob_runif[c] = 0.1
+          
+          print(paste(colnames(df)[c], 'p, q, r, s: ', p, q, r, s))
+          print(paste('media_coef: ', media_coef))
+          print(Sys.time())
+          print(paste("mean(output): ", mean(output)))
+          
+          plot(input, output, xlab = colnames(df)[c])
+          plot(boa, xlab = colnames(df)[c])
         }
         
+        else if (prob_runif[c] < 0.9){
+            prob_runif[c] = prob_runif[c]+(0.05/accurate)
+          }
+      
       }
      
     media_all = c()
@@ -912,7 +906,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
   
   return(df_list[1:length(df_list)])
 }
-look_fuzzy_set(crit_tri[[5]], colnames(crit_tri[[5]])[20], 5, 1, 0.1)
+look_fuzzy_set(crit_tri[[5]], "v_price", 5, 5, 0.2)
 
 
 
