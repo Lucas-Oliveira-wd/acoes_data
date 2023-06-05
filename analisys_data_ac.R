@@ -516,7 +516,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
       #############       improve parameters search       ######################
       ##########################################################################
       
-      desv_times = 0.5  #multiplicador do desvio padrão, quanto maior, maior
+      desv_times = 5  #multiplicador do desvio padrão, quanto maior, maior
                       #será a chance de encontrar outros valores fora da
                       #distribuição
       
@@ -551,52 +551,22 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
           output = c(output, membership_grade)
         }
         
-        #criando a possível nova linha do df res
+        #criando a nova linha do df res
         
         new_row = data.frame('indices' = colnames(df)[c], 'p' = p, 'q' = q, 'r' = r,
                              's' = s, "coef.corr" = cor(df[,col_num], output))
-      
-        # veridicando se a correlação existe e se a media da imagem é maior que o lim
-        if (!is.na(cor(df[,col_num], output)) &&
-            (1 - mean_lim_bottom) > mean(output) && mean(output) > mean_lim_bottom){
-          
-          #verificando a quantidade de linhas do df res
-          if (nrow(df_list[[c]]) < num_row){
-            df_list[[c]] = rbind(df_list[[c]], new_row)
-          
-          } #verificando se o coeficiente encontrado e maior que o mínimo
-          else if (sd(df[,col_num]) != 0 && sd(output) != 0 &&
-                   cor(df[,col_num], output) > min(df_list[[c]][,"coef.corr"])){
             
-            # aumentando a probabilidade do rnorm
+        #adicionando o valor encontrado
+        df_list[[c]] = rbind(df_list[[c]], new_row)
             
-            #encontrando a linha  do valor minimo do coeficiente
-            j_min = match(min(df_list[[c]][,"coef.corr"]), df_list[[c]][,"coef.corr"])
-            
-            #removendo a linha do valor mínimo
-            df_list[[c]] = df_list[[c]][-j_min,]
-            
-            #adicionando o valor encontrado
-            df_list[[c]] = rbind(df_list[[c]], new_row)
-            
-            print(paste(colnames(df)[c], 'p, q, r, s: ', p, q, r, s))
-            print(paste('media_coef: ', media_coef))
-            print(Sys.time())
-            print(paste("mean(output): ", mean(output)))
-            
-            plot(input, output, xlab = colnames(df)[c])
-            plot(boa, xlab = colnames(df)[c])
-          }
-        
-        }
       
         
         #########       continues of improvement       #########################
         ########################################################################
       } else {
         choice_path = sample(c('rnorm', 'runif'), 1,
-                             prob = c(1 - round(prob_runif[c],1),
-                                      round(prob_runif[c],1)))
+                             prob = c(1 - round(prob_runif[c],2),
+                                      round(prob_runif[c],2)))
         
         #pesos para a média ponderada
         pesos = abs(df_list[[c]][,'coef.corr']/sum(df_list[[c]][,'coef.corr']))
@@ -868,12 +838,8 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
         if (!is.na(cor(df[,col_num], output)) &&
             (1 - mean_lim_bottom) > mean(output) && mean(output) > mean_lim_bottom){
           
-          #verificando a quantidade de linhas do df res
-          if (nrow(df_list[[c]]) < num_row){
-            df_list[[c]] = rbind(df_list[[c]], new_row)
-            
-          } #verificando se o coeficiente encontrado e maior que o mínimo
-          else if (sd(df[,col_num]) != 0 && sd(output) != 0 &&
+           #verificando se o coeficiente encontrado e maior que o mínimo
+          if (sd(df[,col_num]) != 0 && sd(output) != 0 &&
                    cor(df[,col_num], output) > min(df_list[[c]][,"coef.corr"])){
             
             #encontrando a linha  do valor minimo do coeficiente
@@ -898,14 +864,9 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
           }
           
           
-          else if (sd(df[,col_num]) != 0 && sd(output) != 0 &&
-                     cor(df[,col_num], output) < min(df_list[[c]][,"coef.corr"])){
-            #aumentando o prob_runif
-            #verificando se o prob_unif já esta no valor máximo
-            if (prob_runif[c] < 0.9){
+          else if (prob_runif[c] < 0.9){
               prob_runif[c] = prob_runif[c]+(0.05/accurate)
             }
-          }
           
         }
         
@@ -916,7 +877,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
       media_all = c(media_all, max(d[,'coef.corr']))
     }
     media_coef = mean(media_all)
-   }
+    }
   }
     if (round(mean(prob_runif),2) == 0.90){
       break
@@ -925,7 +886,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
   
   return(df_list[1:length(df_list)])
 }
-look_fuzzy_set(crit_tri[[5]], colnames(crit_tri[[5]])[20], 5, 10, 0.1)
+look_fuzzy_set(crit_tri[[5]], colnames(crit_tri[[5]])[20], 5, 1, 0.1)
 
 
 
