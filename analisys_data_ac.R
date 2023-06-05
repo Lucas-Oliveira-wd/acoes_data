@@ -525,13 +525,14 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
     
     if (colnames(df)[c] != col_obj){
       input = df[,c]
+      
+      if (diff(range(input)) == 0){
+        stop(paste('errot: coluna ', colnames(df)[c],
+                   'tem amplitude igual a zero, sem desvio padrão'))
+      }
     
       #############       improve parameters search       ######################
       ##########################################################################
-      
-      desv_times = 5  #multiplicador do desvio padrão, quanto maior, maior
-                      #será a chance de encontrar outros valores fora da
-                      #distribuição
       
       if (nrow(df_list[[c]]) < num_row){
         
@@ -577,6 +578,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
         #########       continues of improvement       #########################
         ########################################################################
       } else {
+        
         choice_path = sample(c('rnorm', 'runif'), 1,
                              prob = c(1 - round(prob_runif[c],2),
                                       round(prob_runif[c],2)))
@@ -587,7 +589,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
         ## selecionando aleatoriamente entre 'p' ou 's'
         choice_param = sample(c('p', 's'), 1)
         
-        arredond = 2  # qtd de casa decimais para os parametros
+        multidesv_times = 1/10 #multiplicador da fração entre as amplitudes
         
         p_col = df_list[[c]][,'p']
         q_col = df_list[[c]][,'q']
@@ -609,6 +611,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
           choice_path
           #verificando a escolha do caminho, runif ou rnorm
           if (choice_path == 'rnorm'){
+            
             #####   verificando se o desvio padrão é igual a zero
             if (sd(p_col) == 0){
               if (mean(p_col) == 0){
@@ -619,6 +622,8 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
                                 sd = abs(mean(p_col))), arredond)
               }
             } else {
+              desv_times = multidesv_times*diff(range(input))/diff(range(p_col))
+              
               p = round(rnorm(1, mean = sample(p_col, 1, prob = pesos),
                               desv_times*sd(p_col)), arredond)
             }
@@ -646,6 +651,8 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
                                 abs(mean(q_col))), arredond)
               }
             } else {
+              desv_times = multidesv_times*diff(range(input))/diff(range(q_col))
+              
               q = round(rnorm(1, sample( q_col, 1, prob = pesos),
                               desv_times*sd(q_col)), arredond)
             }
@@ -674,6 +681,8 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
                                 abs(mean(r_col))), arredond)
               }
             } else {
+              desv_times = multidesv_times*diff(range(input))/diff(range(r_col))
+              
               r = round(rnorm(1, sample(r_col, 1, prob = pesos),
                               desv_times*sd(r_col)), arredond)
             }
@@ -704,6 +713,8 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
                                 abs(mean(s_col))), arredond)
               }
             } else {
+              desv_times = multidesv_times*diff(range(input))/diff(range(s_col))
+              
               s = round(rnorm(1, sample(s_col, 1, prob = pesos),
                               desv_times*sd(s_col)), arredond)
             }
@@ -736,6 +747,8 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
                                 abs(mean(s_col))), arredond)
               }
             } else {
+              desv_times = multidesv_times*diff(range(input))/diff(range(s_col))
+              
               s = round(rnorm(1, sample(s_col, 1, prob = pesos),
                               desv_times*sd(s_col)), arredond)
             }
@@ -764,6 +777,8 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
                                 abs(mean(r_col))), arredond)
               }
             } else {
+              desv_times = multidesv_times*diff(range(input))/diff(range(r_col))
+              
               r = round(rnorm(1, sample(r_col, 1, prob = pesos),
                               desv_times*sd(r_col)), arredond)
             }
@@ -792,6 +807,8 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
                                 abs(mean(q_col))), arredond)
               }
             } else {
+              desv_times = multidesv_times*diff(range(input))/diff(range(q_col))
+              
               q = round(rnorm(1, sample(q_col, 1, prob = pesos),
                               desv_times*sd(q_col)), arredond)
             }
@@ -819,6 +836,8 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
                                 sd = abs(mean(p_col))), arredond)
               }
             } else {
+              desv_times = multidesv_times*diff(range(input))/diff(range(p_col))
+              
               p = round(rnorm(1, sample(p_col, 1, prob = pesos),
                               desv_times*sd(p_col)), arredond)
             }
