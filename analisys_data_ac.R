@@ -509,6 +509,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
   repeat{
   
   for (c in 1:(length(colnames(df))-1)) {
+    print(paste('indice: ', colnames(df)[c]))
     
     if (colnames(df)[c] != col_obj){
       input = df[,c]
@@ -590,6 +591,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
         
         #verificando qual coeficiente foi escolhido
         if (choice_param == 'p'){
+          print('p first')
           #se foi 'p' gerando os parametros do menor para o maior
           
           #################     p       ##################################
@@ -615,7 +617,8 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
               p = max(input)
             }
           } else {
-            p = round(runif(1, min(input), limit_max), arredond)
+            p = round(sample(sort(input)[1:match(limit_max,sort(input))], 1),
+                    arredond)
           }
           
           
@@ -642,7 +645,9 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
               q = max(input)
             }
           } else {
-            q = ifelse(p>=limit_max,p,round(runif(1,p,max(input)), arredond))
+            q = ifelse(p>=limit_max,p,
+        round(sample(sort(input)[match(p,sort(input)):length(input)], 1),
+              arredond))
           }
           
           
@@ -669,7 +674,9 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
               r = max(input)
             }
           } else {
-            r = round(runif(1, q, max(input)), arredond)
+            print('r by sample')
+          r = round(sample(sort(input)[match(q,sort(input)):length(input)], 1),
+                             arredond)
           }
           
           
@@ -696,11 +703,23 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
               s = max(input)
             }
           } else {
-            s = round(runif(1, r, max(input)), arredond)
+            print('s by sample')
+            print(paste('r: ', r))
+            print(paste('match(r,sort(input)): ', match(r,sort(input))))
+            print(paste('sort(input)[match(r,sort(input)):length(input)]: ',
+                        sort(input)[match(r,sort(input)):length(input)]))
+            print(paste('sample(sort(input)[match(r,sort(input)):length(input)], 1): ',
+                        sample(sort(input)[match(r,sort(input)):length(input)], 1)))
+          s = round(sample(sort(input)[match(r,sort(input)):length(input)], 1),
+                    arredond)
           }
-         
+          if (s < r){
+            s = r
+          } 
           
         } else {
+          
+          print('s first')
           #se foi o 's' gerando os parametros do maior para o menor
           
           #################     s     ###################################
@@ -726,7 +745,8 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
               s = min(input)
             }
           } else {
-            s = round(runif(1, limit_min, max(input)), arredond)
+  s = round(sample(sort(input)[match(limit_min,sort(input)):length(input)], 1),
+              arredond)
           }
           
           
@@ -753,7 +773,8 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
               r = min(input)
             }
           } else {
-            r = ifelse(s<=limit_min,s,round(runif(1,min(input),s),arredond))
+    r = ifelse(s<=limit_min,s,round(sample(sort(input)[1:match(s,sort(input))],
+                                           1),arredond))
           }
           
           
@@ -780,7 +801,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
               q = min(input)
             }
           } else {
-            q = round(runif(1,min(input), r), arredond)
+            q = round(sample(sort(input)[1:match(r,sort(input))], 1), arredond)
           }
           
           
@@ -807,9 +828,14 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
               p = min(input)
             }
           } else {
-            p = round(runif(1,min(input), q), arredond)
+            p = round(sample(sort(input)[1:match(q, sort(input))], 1), arredond)
           }
         }
+        
+        print(paste('p: ', p))
+        print(paste('q: ', q))
+        print(paste('r: ', r))
+        print(paste('s: ', s))
         
         
         #gerando a função que mostra o grau de pertencimento ao conjunto de
