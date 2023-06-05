@@ -589,7 +589,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
         ## selecionando aleatoriamente entre 'p' ou 's'
         choice_param = sample(c('p', 's'), 1)
         
-        multidesv_times = 1/10 #multiplicador da fração entre as amplitudes
+        multidesv_times = 1/70 #multiplicador da fração entre as amplitudes
         
         p_col = df_list[[c]][,'p']
         q_col = df_list[[c]][,'q']
@@ -922,7 +922,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
   
   return(df_list[1:length(df_list)])
 }
-look_fuzzy_set(crit_tri[[5]], "v_price", 5, 1, 0.2)
+look_fuzzy_set(crit_tri[[5]], "v_price", 5, 100, 0.2)
 
 
 
