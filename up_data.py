@@ -151,9 +151,9 @@ empresa''')
 					if ult_cot.date() > ult_cot_db:
 						print('''\
 a cotação não foi atualizada. inserindo cotação e dividendyield para o db diario''')
-						sql = '''INSERT INTO acoesb3cot (ultCot ,cod, cotAtual, divYield) VALUES (%s, %s, %s, %s) '''
+						sql = '''INSERT INTO acoesb3cot (ultCot ,cod, cotAtual, nAcoes, divYield) VALUES (%s, %s, %s, %s, %s) '''
 						## verificando se os dados estão corretos
-						val = (ult_cot.date(), emp, converComTD(v_dados[3]), converComTD(v_dados[67]))
+						val = (ult_cot.date(), emp, converComTD(v_dados[3]), converComTD(v_dados[27]), converComTD(v_dados[67]))
 						mycursor.execute(sql, val)
 						mydb.commit()
 						print(mycursor.rowcount, f"record inserted. values {val} on acoesb3cot")
@@ -218,9 +218,9 @@ Não atualizando o preço para {emp}. Já está atualizado''')
 					if ult_cot.date() > ult_cot_db:
 						print('''\
 a cotação não foi atualizada. inserindo cotação e dividendyield para o db diario''')
-						sql = '''INSERT INTO bankcot (ultCot ,cod, cotAtual, divYield) VALUES (%s, %s, %s, %s) '''
+						sql = '''INSERT INTO bankcot (ultCot ,cod, cotAtual, nAcoes, divYield) VALUES (%s, %s, %s, %s, %s) '''
 						## verificando se os dados estão corretos
-						val = (ult_cot.date(), emp, converComTD(v_dados[3]), converComTD(v_dados[67]))
+						val = (ult_cot.date(), emp, converComTD(v_dados[3]), converComTD(v_dados[27]), converComTD(v_dados[67]))
 						mycursor.execute(sql, val)
 						mydb.commit()
 						print(mycursor.rowcount, f"record inserted. values {val} on bankcot")
