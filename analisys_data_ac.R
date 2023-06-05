@@ -518,11 +518,10 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
   }
   
   
+  ## criando o indice de coluna
   
-  repeat{
-  
-  for (c in 1:(length(colnames(df))-1)) {
-    print(paste('indices: ', colnames(df)[c]))
+  c = 1
+  while(round(mean(prob_runif),2) < 0.90){
     
     if (colnames(df)[c] != col_obj){
       input = df[,c]
@@ -851,15 +850,10 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
           output = c(output, membership_grade)
         }
         
-        # condições para ir para a próxima iteração
+        # condições para repetir a iteração
         if ((1 - mean_lim_bottom) < mean(output) ||
           mean(output) < mean_lim_bottom || is.na(cor(df[,col_num], output)) ||
           sd(df[,col_num]) == 0 || sd(output) == 0){
-          
-          #voltando a iteração
-          print(paste('c: ', c))
-          c=c-1
-          print(paste('c: ', c))
           next
         }
         
@@ -904,15 +898,12 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
     }
     media_coef = mean(media_all)
     }
-  }
-    if (round(mean(prob_runif),2) == 0.90){
-      break
-    } 
+    c = ifelse(c==ncol(df)-1,1,c+1)
   }
   
   return(df_list[1:length(df_list)])
 }
-look_fuzzy_set(crit_tri[[5]], "v_price", 5, 1, 0.2)
+look_fuzzy_set(crit_tri[[5]], "v_price", 5, 10, 0.2)
 
 
 
