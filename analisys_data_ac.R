@@ -10,10 +10,10 @@ df_day = read.csv("data/acoesb3cot.csv")
 
 #coletando as datas dos últimos balanços  
 ult_bal_dates = c()
-for (i in df_tri[,"ultBal"]){
-  if (i %in% ult_bal_dates){}
+for (i in 1:nrow(df_tri)){
+  if (df_tri[i,"ultBal"] %in% ult_bal_dates){}
   else{
-    ult_bal_dates = c(ult_bal_dates, i)
+    ult_bal_dates = c(ult_bal_dates, df_tri[i,"ultBal"])
   }
 }
 
@@ -508,7 +508,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
   col_num = match(col_obj, colnames(df))
   
   if (mean_lim_bottom >= 0.5 || mean_lim_bottom < 0){
-    stop('erro: mean_lim_bottom deve ser maior que 0 e menor que
+    stop('error: mean_lim_bottom deve ser maior que 0 e menor que
                    0.5')
   }
   
@@ -934,7 +934,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
   
   return(df_list[1:length(df_list)])
 }
-look_fuzzy_set(crit_tri[[6]], "v_price", 5, 1000, 0.2)
+look_fuzzy_set(crit_tri[[6]], "v_price", 5, 1, 0.2)
 
 
 
