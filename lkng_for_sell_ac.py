@@ -26,7 +26,7 @@ Desde a data {}(Mês-Dia-Ano) até agr
 """
 print(msg_aval_since.format(data_inicial))
 
-empresas_df = ('ENAT3', 'CTSA4', 'CSNA3', 'GPIV33', 'TRPL4', 'CRPG6', 'PETR4', 'BRSR6')
+empresas_df = ('ENAT3')
 
 #conectando com o banco de dados
 mydb = mariadb.connect(

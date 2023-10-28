@@ -28,7 +28,7 @@ def isCorr(dic):  ## função para verificar se os dados estão corretos
 def last_letter(word):	## funcao para retornar o ultimo caractere de uma string
     return word[::-1]
 
-driver = webdriver.Chrome("C:\Program Files\Google\Chrome\Application\chromedriver_win32\chromedriver.exe")
+driver = webdriver.Chrome("C:\Program Files\Google\Chrome\Application\chromedriver-win64\chromedriver.exe")
 
 driver.get("https://fundamentus.com.br/resultado.php")
 content = driver.page_source

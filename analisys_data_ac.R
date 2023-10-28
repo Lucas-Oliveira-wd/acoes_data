@@ -265,7 +265,7 @@ for (per in 1:length(ult_bal_dates)){
 }
 
 
-###################             periodo 5         ##############################
+###################             periodo 6         ##############################
 ################################################################################
 
 
@@ -311,24 +311,24 @@ last_cot = data.frame(ult_cot, cotAtual)
 row.names(last_cot) = cod
 
 var_price = c()
-for (r in 1:nrow(crit_tri[[5]])) {
+for (r in 1:nrow(crit_tri[[6]])) {
   
   # encontrando a posição da linha do codigo da iteração no df das demonstrações
-  j_dem = match(row.names(crit_tri[[5]])[r], row.names(trimestres[[5]]))
+  j_dem = match(row.names(crit_tri[[6]])[r], row.names(trimestres[[6]]))
   
   # encontrando a posição da linha do codigo da iteração no df last_cot
-  j_lastc = match(row.names(crit_tri[[5]])[r], row.names(last_cot))
+  j_lastc = match(row.names(crit_tri[[6]])[r], row.names(last_cot))
   
   
   var_price = c(var_price,
-(last_cot[j_lastc, "cotAtual"] - trimestres[[5]][j_dem, "cotAtual_t"])/trimestres[[5]][j_dem, "cotAtual_t"])
+(last_cot[j_lastc, "cotAtual"] - trimestres[[6]][j_dem, "cotAtual_t"])/trimestres[[6]][j_dem, "cotAtual_t"])
   
 }
 
 # adicionando as variações dos precos ao df crit do 5 periodo
-crit_tri[[5]]$v_price = var_price
+crit_tri[[6]]$v_price = var_price
 
-colnames(crit_tri[[5]]) = c("L/P", 'L/P (tri)', "VPA/P", "ROE" , 'ROE (tri)', "ROIC",
+colnames(crit_tri[[6]]) = c("L/P", 'L/P (tri)', "VPA/P", "ROE" , 'ROE (tri)', "ROIC",
                              "(Caixa/Ação)/Preço", "(Ativos Circulantes/Ação)/Preço",
                              "(Ativos/Ação)/Preço", "Dív Bruta/Caixa", "Marg. EBIT",
                              'Marg. EBIT (tri)', "Marg. Líquida", 'Marg. Líquida (tri)',
@@ -340,12 +340,12 @@ colnames(crit_tri[[5]]) = c("L/P", 'L/P (tri)', "VPA/P", "ROE" , 'ROE (tri)', "R
 
 #################         coeficiente de correlação         ####################
 library(openxlsx)
-cor_tab = data.frame(cor(crit_tri[[5]]))
+cor_tab = data.frame(cor(crit_tri[[6]]))
 write.xlsx(cor_tab,
   file = 'C:/files/projects/programacao/python/acoes_data/correlacao.xlsx')
 
 ##      diagrama de dispersão
-plot(crit_tri[[5]]$`Marg. EBIT`, crit_tri[[5]]$`Marg. EBIT (tri)`)
+plot(crit_tri[[6]]$`Marg. EBIT`, crit_tri[[6]]$`Marg. EBIT (tri)`)
 
 
 
@@ -934,7 +934,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
   
   return(df_list[1:length(df_list)])
 }
-look_fuzzy_set(crit_tri[[5]], "v_price", 5, 100, 0.2)
+look_fuzzy_set(crit_tri[[6]], "v_price", 5, 1000, 0.2)
 
 
 
