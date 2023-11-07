@@ -24,10 +24,12 @@ for emp in empresas:
     result = mycursor.fetchall()
     for r in result:
         if r[0] == None:
-            sql = f"SELECT nAcoes, ultBal FROM acoesb3 WHERE codigo='{emp}' AND ultBal>='{r[1]}' ORDER BY ultBal LIMIT 1"
+            print(f"{emp}: {r[1]}")
+            sql = f"SELECT nAcoes, ultBal FROM acoesb3 WHERE codigo='{emp}' ORDER BY ultBal LIMIT 1"
             mycursor.execute(sql)
             result2 = mycursor.fetchall()
             for r2 in result2:
                 print(f"{emp}: {r2[0]}, {r[1]}")
                 sql = f"UPDATE acoesb3cot SET nAcoes = {r2[0]} WHERE cod='{emp}' AND ultCot='{r[1]}'"
-
+                mycursor.execute(sql)
+                mydb.commit()
