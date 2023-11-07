@@ -934,7 +934,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
   
   return(df_list[1:length(df_list)])
 }
-look_fuzzy_set(crit_tri[[6]], "v_price", 5, 1, 0.2)
+look_fuzzy_set(crit_tri[[6]], "v_price", 5, 2, 0.2)
 
 
 
