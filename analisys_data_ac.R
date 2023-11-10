@@ -3,6 +3,8 @@ library(gridExtra)
 library(ggplot2)
 library(readxl)
 
+setwd("C:/files/projects/programacao/python/acoes_data/")
+
 df_tri = read.csv("data/acoesb3.csv")
 
 df_day = read.csv("data/acoesb3cot.csv")
@@ -39,6 +41,8 @@ trimestres = list()
 
 #lista para conter os critérios por períodos
 crit_tri = list()
+
+qtd_dias = 3 #qtd de dias de variação
 
 #criando os valores dos critérios
 for (per in 1:length(ult_bal_dates)){
@@ -82,63 +86,89 @@ for (per in 1:length(ult_bal_dates)){
   
   #criando as variaveis do db diário
   
-  ult_cot = cotAtual = cod = divY = n_ac = c()
+  ult_cot = cotAtual = cod = divY = n_ac = cotF = n_acF = c()
   
-  # loop na coluna 'ultCot' do dbday
+  # loop nas linhas do dbday
   for (i in 1:nrow(df_day)){
     
-    # verificando se o codigo da ação já pertence a coluna do periodo df codigo    
-    if (df_day[i,"cod"] %in% row.names(df_tri_dem)){
-      
-      # obtendo o número da posição desse código no df_tri_dem
-      j = match(df_day[i,"cod"], row.names(df_tri_dem))
-      
-      # verificando se o valor da ultima cotação da iteração atual é maior que
-      #o valor pertencente à variável e menor ou igual a data de inserção
-      if (as.Date(df_day[i,"ultCot"]) > as.Date(df_day[j,"ultCot"]) &&
-          as.Date(df_day[i,'ultCot']) <= as.Date(ultIns[j])){
+    # obtendo o número da posição do codigo atual no df_tri_dem
+    j_dem = match(df_day[i,"cod"], row.names(df_tri_dem))
+    if (is.na(j_dem)){}
+    else {
+      # verificando se o codigo da ação já pertence a variavel cod    
+      if (df_day[i,"cod"] %in% cod){
         
-        #se for maior: retirando o valor de cada variável correspondente à
-        #posição do valor pertencente
-        ult_cot = ult_cot[-j]; cod = cod[-j]; cotAtual = cotAtual[-j];
-        divY = divY[-j]; n_ac = n_ac[-j]
+        #Se pertence:
+        # obtendo o número da posição desse código no cod
+        j = match(df_day[i,"cod"], cod)
         
-        #colocando os valores que teve a maior ultCot (preço atualizado)
-        #ult_cot[per] = df_day[i,"ultCot"]    ### codigo travado            
+        # verificando se o valor da ultima cotação da iteração atual é 
+        # menor ou igual a data de inserção + dias
+        if (as.Date((df_day[i,'ultCot'])) <= as.Date(ultIns)[j_dem]+qtd_dias){
+          
+          # verificando se o valor da ultima cotação da iteração atual é maior que
+          #o valor pertencente à variável e menor ou igual a data de inserção
+          if (as.Date(df_day[i,"ultCot"]) > as.Date(df_day[j,"ultCot"]) &&
+              as.Date(df_day[i,'ultCot']) <= as.Date(ultIns[j_dem])){
+            
+            #se for maior: retirando o valor de cada variável correspondente à
+            #posição do valor pertencente
+            ult_cot = ult_cot[-j]; cod = cod[-j]; cotAtual = cotAtual[-j];
+            divY = divY[-j]; n_ac = n_ac[-j]; cotF = cotF[-j]; n_acF = n_acF[-j]
+            
+            #colocando os valores que teve a maior ultCot (preço atualizado)          
+            ult_cot = c(ult_cot, df_day[i,"ultCot"])
+            cod = c(cod, df_day[i,"cod"])
+            cotAtual = c(cotAtual, df_day[i,"cotAtual"])
+            divY = c(divY, df_day[i, "divYield"])
+            n_ac = c(n_ac, df_day[i, "nAcoes"])
+            cotF = c(cotF, df_day[i, "cotAtual"])
+            n_acF = c(n_acF, df_day[i, "nAcoes"])
+          } else {
+            cotF[j] = df_day[i, "cotAtual"]
+            
+            n_acF[j] = df_day[i, "nAcoes"]
+          }
+          
+        }
+        
+        
+      } else if (as.Date(df_day[i,'ultCot']) <= as.Date(ultIns[j_dem])) {
+        
+        #se não pertence e é menor que o período:
+        #apenas colocando o valor da iteração atual
         ult_cot = c(ult_cot, df_day[i,"ultCot"])
         cod = c(cod, df_day[i,"cod"])
         cotAtual = c(cotAtual, df_day[i,"cotAtual"])
         divY = c(divY, df_day[i, "divYield"])
         n_ac = c(n_ac, df_day[i, "nAcoes"])
-      }
-    } else if (as.Date(df_day[i,'ultCot']) <= as.Date(ult_bal_dates[per])) {
-      #se não pertence e é menor que o período:
-      #apenas colocando o valor da iteração atual
-      ult_cot = c(ult_cot, df_day[i,"ultCot"])
-      cod = c(cod, df_day[i,"cod"])
-      cotAtual = c(cotAtual, df_day[i,"cotAtual"])
-      divY = c(divY, df_day[i, "divYield"])
-      n_ac = c(n_ac, df_day[i, "nAcoes"])
+        cotF = c(cotF, df_day[i, "cotAtual"])
+        n_acF = c(n_acF, df_day[i, "nAcoes"])
+      } 
     }
-      
   }
 
   
   # ordenando as variáves antes de se unirem ao trimestral
-  ult_cot_t = cotAtual_t = divY_t = n_ac_t = c()
+  ult_cot_t = cotAtual_t = divY_t = n_ac_t = cotF_t = n_acF_t = c()
   
   #loop através das linhas do db trimestral das demonstrações
   for (i in 1:nrow(df_tri_dem)){
     
-    ult_cot_t = c(ult_cot_t, ult_cot[i])
-    cotAtual_t = c(cotAtual_t, cotAtual[i])
-    divY_t = c(divY_t, divY[i])
-    n_ac_t = c(n_ac_t, n_ac[i])
+    #encontrando a posição do codigo atual na linha
+    j = match(row.names(df_tri_dem)[i], cod)
     
+    ult_cot_t = c(ult_cot_t, ult_cot[j])
+    cotAtual_t = c(cotAtual_t, cotAtual[j])
+    divY_t = c(divY_t, divY[j])
+    n_ac_t = c(n_ac_t, n_ac[j])
+    cotF_t = c(cotF_t, cotF[j])
+    n_acF_t = c(n_acF_t, n_acF[j])
   }
   
   df_tri_dem$ult_cot_t = ult_cot_t; df_tri_dem$cotAtual_t = cotAtual_t
   df_tri_dem$divY_t = divY_t; df_tri_dem$n_ac_t = n_ac_t
+  df_tri_dem$cotF_t = cotF_t; df_tri_dem$n_acF_t = n_acF_t
 
 
   
@@ -148,36 +178,37 @@ for (per in 1:length(ult_bal_dates)){
   
   #gridExtra::grid.table(df_tri_3t22 %>% slice(1:20))
   
+  arr_ind = 3 #casas decimais dos indices
   
   # criando os índices
-  pl = round(cotAtual_t/(Lucl12/n_ac_t), 2)
-  pl3 = round(cotAtual_t/(as.numeric(Lucl3)/n_ac_t), 2)
-  lp = round((Lucl12/n_ac_t)/cotAtual_t, 2)
-  lp3 = round((as.numeric(Lucl3)/n_ac_t)/cotAtual_t, 2)
-  vp = round((patl/n_ac_t)/cotAtual_t, 2)
-  roe = round((Lucl12/patl)*100, 2)
-  roe3 = round((as.numeric(Lucl3)/patl)*100, 2)
-  roic = round(as.numeric(roic), 2)
-  cxa_p = round((disp/n_ac_t)/cotAtual_t, 2)
-  ativc_p = round((ativc/n_ac_t)/cotAtual_t, 2)
-  ativ_p = round((ativ/n_ac_t)/cotAtual_t, 2)
-  div_cxa = round(divb/disp, 2)
-  marg_ebit = round((ebit12/recl12)*100, 2)
-  marg_ebit3 = round((as.numeric(ebit3)/recl3)*100, 2)
+  pl = round(cotAtual_t/(Lucl12/n_ac_t), arr_ind)
+  pl3 = round(cotAtual_t/(as.numeric(Lucl3)/n_ac_t), arr_ind)
+  lp = round((Lucl12/n_ac_t)/cotAtual_t, arr_ind)
+  lp3 = round((as.numeric(Lucl3)/n_ac_t)/cotAtual_t, arr_ind)
+  vp = round((patl/n_ac_t)/cotAtual_t, arr_ind)
+  roe = round((Lucl12/patl)*100, arr_ind)
+  roe3 = round((as.numeric(Lucl3)/patl)*100, arr_ind)
+  roic = round(as.numeric(roic), arr_ind)
+  cxa_p = round((disp/n_ac_t)/cotAtual_t, arr_ind)
+  ativc_p = round((ativc/n_ac_t)/cotAtual_t, arr_ind)
+  ativ_p = round((ativ/n_ac_t)/cotAtual_t, arr_ind)
+  div_cxa = round(divb/disp, arr_ind)
+  marg_ebit = round((ebit12/recl12)*100, arr_ind)
+  marg_ebit3 = round((as.numeric(ebit3)/recl3)*100, arr_ind)
   marg_liq = round((Lucl12/recl12)*100, 2)
-  marg_liq3 = round((as.numeric(Lucl3)/recl3)*100, 2)
-  cres_rec5 = round(as.numeric(cres_rec5), 2)
-  divY_t = round(as.numeric(divY_t), 2)
-  lynch = round((divY_t+(cres_rec5/5))/pl, 2)
-  lynch3 = round((divY_t/3+(cres_rec5/15))/pl3, 2)
-  div_lucm = round(divb/(as.numeric(Lucl3)/3), 2)
-  psr_inv = round((recl12/n_ac_t)/cotAtual_t, 2)
-  psr_inv3 = round((as.numeric(recl3)/n_ac_t)/cotAtual_t, 2)
-  ebit_p = round((ebit12/n_ac_t)/cotAtual_t, 2)
-  ebit_p3 = round((as.numeric(ebit3)/n_ac_t), 2)
-  ebit_ativ = round(ebit12/ativ, 2)
-  ebit_ativ3 = round((as.numeric(ebit3)/ativ), 2)
-  divb_pat = round(divb/patl, 2)
+  marg_liq3 = round((as.numeric(Lucl3)/recl3)*100, arr_ind)
+  cres_rec5 = round(as.numeric(cres_rec5), arr_ind)
+  divY_t = round(as.numeric(divY_t), arr_ind)
+  lynch = round((divY_t+(cres_rec5/5))/pl, arr_ind)
+  lynch3 = round((divY_t/3+(cres_rec5/15))/pl3, arr_ind)
+  div_lucm = round(divb/(as.numeric(Lucl3)/3), arr_ind)
+  psr_inv = round((recl12/n_ac_t)/cotAtual_t, arr_ind)
+  psr_inv3 = round((as.numeric(recl3)/n_ac_t)/cotAtual_t, arr_ind)
+  ebit_p = round((ebit12/n_ac_t)/cotAtual_t, arr_ind)
+  ebit_p3 = round((as.numeric(ebit3)/n_ac_t), arr_ind)
+  ebit_ativ = round(ebit12/ativ, arr_ind)
+  ebit_ativ3 = round((as.numeric(ebit3)/ativ), arr_ind)
+  divb_pat = round(divb/patl, arr_ind)
   
   
   crit = data.frame(lp, lp3, vp, roe, roe3, roic, cxa_p, ativc_p, ativ_p,
@@ -274,84 +305,83 @@ for (per in 1:length(ult_bal_dates)){
   print(paste('DF do periodo: ', ult_bal_dates[per], ' criado'))
 }
 
-
-###################             periodo 6         ##############################
+#########       função para retornar as variações dos índices     ##############
+#########         de um período anterior a um especificado        ##############
 ################################################################################
 
-
-###########       essa linha de codigos é só para testes        ################
-################################################################################
-
-#criando as variaveis do db diário
-ult_cot = cod = cotAtual = c()
-
-# loop na coluna 'ultCot' do dbday
-for (i in 1:nrow(df_day)){
+#per_i => periodo a ser analisado
+varInd = function(per_i){
   
-  # verificando se o codigo da ação já pertence a coluna do periodo df cod    
-  if (df_day[i,"cod"] %in% cod){
+  var_price = c()
+  
+  for (r in 1:nrow(crit_tri[[per_i]])) {
     
-    # obtendo o número da posição desse código na varável cod
-    j = match(df_day[i,"cod"], cod)
+    # encontrando a posição da linha do codigo da iteração no df das demonstrações
+    j_dem = match(row.names(crit_tri[[per_i]])[r], row.names(trimestres[[per_i]]))
     
-    # verificando se o valor da ultima cotação da iteração atual é maior que
-    #o valor pertencente à variável
-    if (as.Date(df_day[i,"ultCot"]) > as.Date(df_day[j,"ultCot"])){
-      
-      #se for maior: retirando o valor de cada variável correspondente à
-      #posição do valor pertencente
-      ult_cot = ult_cot[-j]; cod = cod[-j]; cotAtual = cotAtual[-j]
-      
-      #colocando os valores que teve a maior ultCot (preço atualizado)
-      #ult_cot[per] = df_day[i,"ultCot"]    ### codigo travado            
-      ult_cot = c(ult_cot, df_day[i,"ultCot"])
-      cod = c(cod, df_day[i,"cod"])
-      cotAtual = c(cotAtual, df_day[i,"cotAtual"])
-    }
-  } else if (as.Date(df_day[i,'ultCot']) <= as.Date(ult_bal_dates[per])) {
-    #se não pertence apenas colocando o valor da iteração atual
-    ult_cot = c(ult_cot, df_day[i,"ultCot"])
-    cod = c(cod, df_day[i,"cod"])
-    cotAtual = c(cotAtual, df_day[i,"cotAtual"])
+    # encontrando a posição da linha do codigo da iteração no df dos criterios
+    # do período anterior
+    j_dem_bef = match(row.names(crit_tri[[per_i]])[r], row.names(crit_tri[[per_i-1]]))
+    
+    # criando o df das variacoes dos indices
+    for (ind in 1:ncol(crit_tri[[per_i]]))
+      if (!is.na(j_dem_bef)){
+        crit_tri[[per_i]][r,ind] = (crit_tri[[per_i]][r,ind] -
+        crit_tri[[per_i-1]][j_dem_bef,ind])/abs(crit_tri[[per_i-1]][j_dem_bef,ind])
+        
+        #arredondando
+        crit_tri[[per_i]][r, ind] = round(crit_tri[[per_i]][r, ind], 4)
+      } else {
+        crit_tri[[per_i]][r, ind] = NA
+      }
+    price_i = trimestres[[per_i]][j_dem,'cotAtual_t']
+    price_f = trimestres[[per_i]][j_dem,'cotF_t']*
+      (trimestres[[per_i]][j_dem,'n_acF_t']/trimestres[[per_i]][j_dem, 'n_ac_t'])
+    
+    var_price = c(var_price, round((price_f - price_i)/price_i, 4))
+    
   }
   
+  # adicionando as variações dos precos ao df crit do periodo
+  crit_tri[[per_i]]$v_price = var_price
+  
+  colnames(crit_tri[[per_i]]) = c("L/P", 'L/P (tri)', "VPA/P", "ROE" , 'ROE (tri)', "ROIC",
+                                  "(Caixa/Ação)/Preço", "(Ativos Circulantes/Ação)/Preço",
+                                  "(Ativos/Ação)/Preço", "Dív Bruta/Caixa", "Marg. EBIT",
+                                  'Marg. EBIT (tri)', "Marg. Líquida", 'Marg. Líquida (tri)',
+                                  "Cresc. Rec. (5 Anos)", "Dividendyield", "Lynch",
+                                  'Lynch (tri)',  "Dív. Bruta/Lucro Mensal", 'PSR (invertido)',
+                                  'PSR (invertido) (tri)', 'EBIT/P', 'EBIT/P (tri)',
+                                  'EBIT/Ativo', 'EBIT/Ativo (tri)', 'Div Bruta/Patrimonio', "v_price")
+  
+  #removendo valores infinitos
+  
+  
+  rmv_inf_values_row <- function(df) {
+    rows_with_inf <- apply(df, 1, function(row) any(is.infinite(row)))
+    df <- df[!rows_with_inf, ]
+    return(df)
+  }
+  
+  crit_tri[[per_i]] = rmv_inf_values_row(crit_tri[[per_i]])
+  
+  #removando valore NA
+  
+  rmv_na_val <- function(df) {
+    incomplete_rows <- !complete.cases(df)
+    
+    if (any(incomplete_rows)) {
+      df <- df[complete.cases(df), ]
+    }
+    
+    return(df)
+  }
+  crit_tri[[per_i]] <- rmv_na_val(crit_tri[[per_i]])
+  
+  return(crit_tri[[per_i]])
 }
 
-last_cot = data.frame(ult_cot, cotAtual)
-row.names(last_cot) = cod
 
-var_price = c()
-qtd_dias = 10 #qtd de dias de variação
-per_i = 6 #periodo a ser analisado
-
-for (r in 1:nrow(crit_tri[[per_i]])) {
-  
-  # encontrando a posição da linha do codigo da iteração no df das demonstrações
-  j_dem = match(row.names(crit_tri[[per_i]])[r], row.names(trimestres[[per_i]]))
-  
-  # encontrando a posição da linha do codigo da iteração no df last_cot
-  j_lastc = match(row.names(crit_tri[[per_i]])[r], row.names(last_cot))
-  
-  price_i = trimestres[[per_i]][j_dem,cotAtual_t]
-  
-  
-  
-  var_price = c(var_price,
-(last_cot[j_lastc, "cotAtual"] - trimestres[[6]][j_dem, "cotAtual_t"])/trimestres[[6]][j_dem, "cotAtual_t"])
-  
-}
-
-# adicionando as variações dos precos ao df crit do 5 periodo
-crit_tri[[6]]$v_price = var_price
-
-colnames(crit_tri[[6]]) = c("L/P", 'L/P (tri)', "VPA/P", "ROE" , 'ROE (tri)', "ROIC",
-                             "(Caixa/Ação)/Preço", "(Ativos Circulantes/Ação)/Preço",
-                             "(Ativos/Ação)/Preço", "Dív Bruta/Caixa", "Marg. EBIT",
-                             'Marg. EBIT (tri)', "Marg. Líquida", 'Marg. Líquida (tri)',
-                             "Cresc. Rec. (5 Anos)", "Dividendyield", "Lynch",
-                             'Lynch (tri)',  "Dív. Bruta/Lucro Mensal", 'PSR (invertido)',
-                             'PSR (invertido) (tri)', 'EBIT/P', 'EBIT/P (tri)',
-                             'EBIT/Ativo', 'EBIT/Ativo (tri)', 'Div Bruta/Patrimonio', "v_price")
 
 
 #################         coeficiente de correlação         ####################
@@ -528,7 +558,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
                    0.5')
   }
   
-  arredond = 2  # qtd de casa decimais para os parametros
+  arredond = 4  # qtd de casa decimais para os parametros
   
   # lista para conter as probabiblidades dos runifs
   prob_runif = c()
@@ -950,7 +980,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
   
   return(df_list[1:length(df_list)])
 }
-look_fuzzy_set(crit_tri[[6]], "v_price", 5, 2, 0.2)
+look_fuzzy_set(varInd(6), 'v_price', 5, 10, 0.2)
 
 
 
