@@ -9,6 +9,9 @@ df_tri = read.csv("data/acoesb3.csv")
 
 df_day = read.csv("data/acoesb3cot.csv")
 
+# função para criar os criterios e as demonstrações separadas por períodos
+
+
 
 #coletando as datas dos últimos balanços  
 ult_bal_dates = c()
@@ -28,12 +31,6 @@ for (t in ult_bal_dates) {
   }
 }
 
-#gridExtra::grid.table(df_day %>% slice(1:20)) # para plotar o db
-
-################################################################################
-############      CRIANDO OS DFs DIÁRIOS     ###################################
-################################################################################
-
 #separando os df por períodos
 
 #lista para conter os períodos
@@ -42,7 +39,7 @@ trimestres = list()
 #lista para conter os critérios por períodos
 crit_tri = list()
 
-qtd_dias = 3 #qtd de dias de variação
+qtd_dias = 8 #qtd de dias de variação
 
 #criando os valores dos critérios
 for (per in 1:length(ult_bal_dates)){
@@ -984,3 +981,8 @@ look_fuzzy_set(varInd(6), 'v_price', 5, 10, 0.2)
 
 
 
+for (i in 1:nrow(df_tri)){
+  if (df_tri[i,'patLiq'] < 0){
+    print(df_tri[i,'codigo'])
+    }
+}
