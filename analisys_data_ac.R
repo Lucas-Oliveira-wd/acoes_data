@@ -981,8 +981,66 @@ look_fuzzy_set(varInd(6), 'v_price', 5, 10, 0.2)
 
 
 
-for (i in 1:nrow(df_tri)){
-  if (df_tri[i,'patLiq'] < 0){
-    print(df_tri[i,'codigo'])
+############################################################################
+###############    função para retirar valores extremos    #################
+############################################################################
+
+
+
+
+
+  # remover valores extremos
+rmv_wild = function(df, fator_multiplicativo) {
+  
+  exib_wild = function(dados, fator_multiplicativo){
+    # Obter estatísticas do boxplot
+    stats <- boxplot.stats(dados)
+    
+    # Calcular limites personalizados
+    limite_inferior <- stats$stats[2] - fator_multiplicativo * IQR(dados, na.rm = T)
+    limite_superior <- stats$stats[4] + fator_multiplicativo * IQR(dados, na.rm = T)
+    
+    # Identificar outliers
+    outliers <- dados[dados < limite_inferior | dados > limite_superior]
+    
+    # Exibir os valores dos outliers
+    return(outliers)  
+  }
+  
+  wild_row = c('so', 'para','length', 'nao', 'ser', 'zero')
+  
+  n_iter = 0
+  while (length(wild_row) != 0) {
+    wild_row = c()
+    for (c in 1:ncol(df)) {
+      if (length(exib_wild(df[,c], fator_multiplicativo)) != 0){
+        for (i in exib_wild(df[,c], fator_multiplicativo)) {
+          #numero das linhas
+          j = match(i, df[,c])
+          df[j,c] = NA
+          if (row.names(df)[j] %in% wild_row){} else {
+            wild_row = c(wild_row, row.names(df)[j])  
+          }
+        }
+      }
     }
+    rmv_na_val <- function(df) {
+      incomplete_rows <- !complete.cases(df)
+      
+      if (any(incomplete_rows)) {
+        df <- df[complete.cases(df), ]
+      }
+      
+      return(df)
+    }
+    
+    print(paste('empresas removidas na iteração', n_iter, ':'))
+    print(wild_row)
+    n_iter = n_iter+1
+    
+    
+    df = rmv_na_val(df)  
+  }
+  
+  return(df)
 }

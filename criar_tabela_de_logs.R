@@ -29,6 +29,18 @@ for (t in ult_bal_dates) {
   }
 }
 
+
+############################################################################
+###############    função para retirar valores extremos    #################
+############################################################################
+
+rmv_wild = function(df, amp) {
+  for (c in 1:ncol(df)) {
+    j = which()
+  }
+}
+
+
 ################################################################################
 ########     função para criar a tabela de registros de resultados    ##########
 ################################################################################
@@ -385,6 +397,9 @@ criar_tab = function(qtd_dias, samp_range, accurate, range_per){
       
       return(crit_tri[[per_i]])
     }
+    
+    
+    
     
     ##################            Fuzzy Sets           #############################
     library(FuzzyNumbers)
