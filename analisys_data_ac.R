@@ -9,9 +9,6 @@ df_tri = read.csv("data/acoesb3.csv")
 
 df_day = read.csv("data/acoesb3cot.csv")
 
-# função para criar os criterios e as demonstrações separadas por períodos
-
-
 
 #coletando as datas dos últimos balanços  
 ult_bal_dates = c()
@@ -39,13 +36,12 @@ trimestres = list()
 #lista para conter os critérios por períodos
 crit_tri = list()
 
-qtd_dias = 8 #qtd de dias de variação
+qtd_dias = 6*30 #qtd de dias de variação
 
 #criando os valores dos critérios
 for (per in 1:length(ult_bal_dates)){
   print(paste('Criando o DF para o periodo: ', ult_bal_dates[per]))
   
-###################   start att 2023/11/07 19:36    ############################
   
   #Criando as variáveis do db trimestral
   ult_bal = codigo = roic = cres_rec5 = divb = disp = ativc = c();
@@ -166,11 +162,6 @@ for (per in 1:length(ult_bal_dates)){
   df_tri_dem$ult_cot_t = ult_cot_t; df_tri_dem$cotAtual_t = cotAtual_t
   df_tri_dem$divY_t = divY_t; df_tri_dem$n_ac_t = n_ac_t
   df_tri_dem$cotF_t = cotF_t; df_tri_dem$n_acF_t = n_acF_t
-
-
-  
-  
-###################   end att 2023/11/07 19:36    ############################## 
   
   
   #gridExtra::grid.table(df_tri_3t22 %>% slice(1:20))
@@ -218,22 +209,15 @@ for (per in 1:length(ult_bal_dates)){
   
   #removendo valores infinitos
   
-  
-###############     chatgpt start      ###############################
-  
   rmv_inf_values_row <- function(df) {
     rows_with_inf <- apply(df, 1, function(row) any(is.infinite(row)))
     df <- df[!rows_with_inf, ]
     return(df)
   }
   
-###############     chatgpt  end     ###############################
-  
   crit = rmv_inf_values_row(crit)
   
  
-  
-###############     chatgpt start      ###############################
   
   rmv_na_val <- function(df) {
     incomplete_rows <- !complete.cases(df)
@@ -245,8 +229,6 @@ for (per in 1:length(ult_bal_dates)){
     return(df)
   }
   crit <- rmv_na_val(crit)
-  
-###############     chatgpt  end     ###############################
   
   
 #############       procurando roe's falsos, lucl e patl negativos       #######
@@ -273,7 +255,7 @@ for (per in 1:length(ult_bal_dates)){
   
   
   for (r in 1:length(crit$ROE)){
-    if (length(emp_lucpat_neg) < 0 && row.names(crit)[r] %in% emp_lucpat_neg){
+    if (length(emp_lucpat_neg) > 0 && row.names(crit)[r] %in% emp_lucpat_neg){
       print(row.names(crit)[r]) #empresa retirada (tinha passado pelos
       #2 filtros anteriores)
       crit = crit[-r,]
@@ -302,12 +284,12 @@ for (per in 1:length(ult_bal_dates)){
   print(paste('DF do periodo: ', ult_bal_dates[per], ' criado'))
 }
 
-#########       função para retornar as variações dos índices     ##############
-#########         de um período anterior a um especificado        ##############
+################################################################################
+#########       função para retornar as variações dos preços      ##############
 ################################################################################
 
 #per_i => periodo a ser analisado
-varInd = function(per_i){
+addVarPrice = function(per_i){
   
   var_price = c()
   
@@ -321,16 +303,7 @@ varInd = function(per_i){
     j_dem_bef = match(row.names(crit_tri[[per_i]])[r], row.names(crit_tri[[per_i-1]]))
     
     # criando o df das variacoes dos indices
-    for (ind in 1:ncol(crit_tri[[per_i]]))
-      if (!is.na(j_dem_bef)){
-        crit_tri[[per_i]][r,ind] = (crit_tri[[per_i]][r,ind] -
-        crit_tri[[per_i-1]][j_dem_bef,ind])/abs(crit_tri[[per_i-1]][j_dem_bef,ind])
-        
-        #arredondando
-        crit_tri[[per_i]][r, ind] = round(crit_tri[[per_i]][r, ind], 4)
-      } else {
-        crit_tri[[per_i]][r, ind] = NA
-      }
+    
     price_i = trimestres[[per_i]][j_dem,'cotAtual_t']
     price_f = trimestres[[per_i]][j_dem,'cotF_t']*
       (trimestres[[per_i]][j_dem,'n_acF_t']/trimestres[[per_i]][j_dem, 'n_ac_t'])
@@ -380,12 +353,267 @@ varInd = function(per_i){
 
 
 
+############################################################################
+###############    função para retirar valores extremos    #################
+############################################################################
+
+# remover valores extremos
+rmv_wild = function(df, fator_multiplicativo) {
+  
+  exib_wild = function(dados, fator_multiplicativo){
+    # Obter estatísticas do boxplot
+    stats <- boxplot.stats(dados)
+    
+    # Calcular limites personalizados
+    limite_inferior <- stats$stats[2] - fator_multiplicativo * IQR(dados, na.rm = T)
+    limite_superior <- stats$stats[4] + fator_multiplicativo * IQR(dados, na.rm = T)
+    
+    # Identificar outliers
+    outliers <- dados[dados < limite_inferior | dados > limite_superior]
+    
+    # Exibir os valores dos outliers
+    return(outliers)  
+  }
+  
+  wild_row = c('so', 'para','length', 'nao', 'ser', 'zero')
+  
+  n_iter = 0
+  while (length(wild_row) != 0) {
+    wild_row = c()
+    for (c in 1:ncol(df)) {
+      if (length(exib_wild(df[,c], fator_multiplicativo)) != 0){
+        for (i in exib_wild(df[,c], fator_multiplicativo)) {
+          #numero das linhas
+          j = match(i, df[,c])
+          df[j,c] = NA
+          if (row.names(df)[j] %in% wild_row){} else {
+            wild_row = c(wild_row, row.names(df)[j])  
+          }
+        }
+      }
+    }
+    rmv_na_val <- function(df) {
+      incomplete_rows <- !complete.cases(df)
+      
+      if (any(incomplete_rows)) {
+        df <- df[complete.cases(df), ]
+      }
+      
+      return(df)
+    }
+    
+    print(paste('empresas removidas na iteração', n_iter, ':'))
+    print(wild_row)
+    n_iter = n_iter+1
+    
+    
+    df = rmv_na_val(df)  
+  }
+  
+  return(df)
+}
+
+
+
+#escolhendo o periodo que sera analisado
+per_choice = addVarPrice(4)
+
+# verificando NA values
+colSums(is.na(per_choice))
+
+boxplot(per_choice, range = 3)
+boxplot(rmv_wild(per_choice, 3), range = 3)
+
+per_choice=rmv_wild(per_choice, 3)
+
+
+################################################################################
+#############         Escolhendo os Índices           ##########################
+################################################################################
+
+##############                 regressão                    ####################
+
+# Realize a regressão linear
+modelo_regressao <- lm(per_choice$v_price~per_choice$`L/P`+
+    per_choice$`L/P (tri)`+per_choice$`VPA/P`+per_choice$ROE+
+    per_choice$`ROE (tri)`+per_choice$ROIC+per_choice$`Dív Bruta/Caixa`+
+      per_choice$`Marg. EBIT`+per_choice$`Marg. EBIT (tri)`+
+      per_choice$`Marg. Líquida`+per_choice$`Marg. Líquida (tri)`+
+      per_choice$`Cresc. Rec. (5 Anos)`+per_choice$Dividendyield+
+      per_choice$Lynch+per_choice$`Lynch (tri)`+
+      per_choice$`Dív. Bruta/Lucro Mensal`+per_choice$`PSR (invertido)`+
+      per_choice$`PSR (invertido) (tri)`+per_choice$`EBIT/P`+
+      per_choice$`EBIT/P (tri)`+per_choice$`EBIT/Ativo`+
+      per_choice$`EBIT/Ativo (tri)`+per_choice$`Div Bruta/Patrimonio`+
+      per_choice$`(Caixa/Ação)/Preço`+
+      per_choice$`(Ativos Circulantes/Ação)/Preço`+
+      per_choice$`(Ativos/Ação)/Preço`)
+
+# Exiba o sumário do modelo
+summary(modelo_regressao)
+
+# regressão com algumas variáveis retiradas (pr > 0.5)
+model_fit = lm(per_choice$v_price~per_choice$`L/P`+
+                 per_choice$`L/P (tri)`+per_choice$`VPA/P`+per_choice$ROE+
+                 per_choice$`ROE (tri)`+per_choice$ROIC+
+                 per_choice$`Marg. EBIT`+
+                 per_choice$`Marg. Líquida`+
+                 per_choice$`Cresc. Rec. (5 Anos)`+per_choice$Dividendyield+
+                 per_choice$Lynch+per_choice$`Lynch (tri)`+
+                 per_choice$`EBIT/P`+
+                 per_choice$`EBIT/P (tri)`+per_choice$`EBIT/Ativo`+
+                 per_choice$`Div Bruta/Patrimonio`+
+                 per_choice$`(Caixa/Ação)/Preço`+
+                 per_choice$`(Ativos Circulantes/Ação)/Preço`+
+                 per_choice$`(Ativos/Ação)/Preço`)
+
+summary(model_fit)
+
+# regressão com algumas variáveis retiradas (pr > 0.5)
+model_fit2 = lm(per_choice$v_price~per_choice$`L/P`+
+                  per_choice$`L/P (tri)`+per_choice$`VPA/P`+per_choice$ROE+
+                  per_choice$`ROE (tri)`+per_choice$ROIC+
+                  per_choice$`Marg. EBIT`+
+                  per_choice$`Marg. Líquida`+
+                  per_choice$`Cresc. Rec. (5 Anos)`+per_choice$Dividendyield+
+                  per_choice$Lynch+per_choice$`Lynch (tri)`+
+                  per_choice$`EBIT/P`+
+                  per_choice$`EBIT/P (tri)`+per_choice$`EBIT/Ativo`+
+                  per_choice$`Div Bruta/Patrimonio`+
+                  per_choice$`(Caixa/Ação)/Preço`+
+                  per_choice$`(Ativos Circulantes/Ação)/Preço`)
+
+summary(model_fit2)
+
+# regressão com algumas variáveis retiradas (pr > 0.5)
+model_fit3 = lm(per_choice$v_price~per_choice$`L/P`+
+                  per_choice$`L/P (tri)`+per_choice$`VPA/P`+per_choice$ROE+
+                  per_choice$`ROE (tri)`+per_choice$ROIC+
+                  per_choice$`Marg. EBIT`+
+                  per_choice$`Marg. Líquida`+
+                  per_choice$`Cresc. Rec. (5 Anos)`+per_choice$Dividendyield+
+                  per_choice$Lynch+per_choice$`Lynch (tri)`+
+                  per_choice$`EBIT/P (tri)`+per_choice$`EBIT/Ativo`+
+                  per_choice$`Div Bruta/Patrimonio`+
+                  per_choice$`(Caixa/Ação)/Preço`+
+                  per_choice$`(Ativos Circulantes/Ação)/Preço`)
+
+summary(model_fit3)
+
+# regressão com algumas variáveis retiradas (pr > 0.1)
+model_fit4 = lm(per_choice$v_price~per_choice$`L/P`+
+                  per_choice$`L/P (tri)`+per_choice$ROE+
+                  per_choice$`Marg. EBIT`+
+                  per_choice$Lynch+per_choice$`Lynch (tri)`+
+                  per_choice$`EBIT/P (tri)`+per_choice$`EBIT/Ativo`+
+                  per_choice$`Div Bruta/Patrimonio`+
+                  per_choice$`(Caixa/Ação)/Preço`)
+
+summary(model_fit4)
+
+# regressão com algumas variáveis retiradas (pr > 0.1)
+model_fit5 = lm(per_choice$v_price~per_choice$`L/P`+
+                  per_choice$ROE+
+                  per_choice$`Marg. EBIT`+
+                  per_choice$Lynch+per_choice$`Lynch (tri)`+
+                  per_choice$`EBIT/P (tri)`+per_choice$`EBIT/Ativo`+
+                  per_choice$`Div Bruta/Patrimonio`+
+                  per_choice$`(Caixa/Ação)/Preço`)
+
+summary(model_fit5)
+
+# regressão com algumas variáveis retiradas (pr > 0.1)
+model_fit6 = lm(per_choice$v_price~per_choice$`L/P`+
+                  per_choice$ROE+
+                  per_choice$`Marg. EBIT`+
+                  per_choice$Lynch+
+                  per_choice$`EBIT/P (tri)`+per_choice$`EBIT/Ativo`+
+                  per_choice$`Div Bruta/Patrimonio`+
+                  per_choice$`(Caixa/Ação)/Preço`)
+
+summary(model_fit6)
+
+# regressão com algumas variáveis retiradas (pr > 0.1)
+model_fit7 = lm(per_choice$v_price~per_choice$`L/P`+
+                  per_choice$`Marg. EBIT`+
+                  per_choice$Lynch+
+                  per_choice$`EBIT/P (tri)`+
+                  per_choice$`Div Bruta/Patrimonio`+
+                  per_choice$`(Caixa/Ação)/Preço`)
+
+summary(model_fit7)
+
+# regressão com algumas variáveis retiradas (pr > 0.1)
+model_fit8 = lm(per_choice$v_price~per_choice$`L/P`+
+                  per_choice$`Marg. EBIT`+
+                  per_choice$Lynch+
+                  per_choice$`EBIT/P (tri)`+
+                  per_choice$`(Caixa/Ação)/Preço`)
+
+summary(model_fit8)
+
+# regressão com algumas variáveis retiradas (pr > 0.1)
+model_fit9 = lm(per_choice$v_price~per_choice$`L/P`+
+                  per_choice$Lynch+
+                  per_choice$`EBIT/P (tri)`+
+                  per_choice$`(Caixa/Ação)/Preço`)
+
+summary(model_fit9)
+
+mat_dec = data.frame(per_choice$`L/P`, per_choice$Lynch,
+                     per_choice$`EBIT/P (tri)`, per_choice$`(Caixa/Ação)/Preço`,
+                     per_choice$v_price,
+                     row.names = row.names(per_choice))
+
+
+################################################################################
+######################        PCA - Analysis        ############################
+################################################################################
+
+library('corrr')
+library(ggcorrplot)
+library("FactoMineR")
+library("factoextra")
+
+# normalizando os dados
+norm_data = scale(per_choice)
+
+# verificando se essa normalização manteve a proporção
+ver_mantem_prop = function(dados, dados_norm){
+  for (col in ncol(dados)) {
+    if (cor(dados[,col], dados_norm[,col]) == 1){} else {
+      return('não manteve a proporção')
+    }
+  }
+  return('manteve a proporção')
+}
+
+ver_mantem_prop(per_choice, norm_data)
+
+# vizualizando a matriz de correlação
+corr_matrix <- cor(norm_data)
+ggcorrplot(corr_matrix)
+
+###           Applying PCA        ####
+
+#Now, all the resources are available to conduct the PCA analysis. First,
+#the princomp() computes the PCA, and summary() function shows the result.
+
+data.pca <- princomp(corr_matrix)
+summary(data.pca)
+
+#Visualization of the principal components 
+
+fviz_eig(data.pca, addlabels = TRUE)
+
 
 #################         coeficiente de correlação         ####################
 library(openxlsx)
-cor_tab = data.frame(cor(crit_tri[[6]]))
+cor_tab = data.frame(cor(rmv_wild(per_choice, 3)))
 write.xlsx(cor_tab,
   file = 'C:/files/projects/programacao/python/acoes_data/correlacao.xlsx')
+
+
 
 ##      diagrama de dispersão
 plot(crit_tri[[6]]$`Marg. EBIT`, crit_tri[[6]]$`Marg. EBIT (tri)`)
@@ -538,14 +766,6 @@ library(FuzzyNumbers)
 library(devtools)
 
 
-
-# a função a seguir precisa de 6 argumentos:
-# 1 - data.frame para ser encontrando as funções trapezoidais
-# 2 - coluna objetivo, para ser comparada com as outras
-# 3 - numero de linhas do resultado
-# 4 - valor da acurácia , quanto maior, maior a acurácia, (accur > 1)
-# 5 - valor mínimo para a média dos outputs da função fuzzy (< 0.5)
-
 look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
   
   col_num = match(col_obj, colnames(df))
@@ -553,6 +773,9 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
   if (mean_lim_bottom >= 0.5 || mean_lim_bottom < 0){
     stop('error: mean_lim_bottom deve ser maior que 0 e menor que
                    0.5')
+  }
+  if (sd(df[,col_num]) == 0){
+    return('desvio padrão da coluna objetivo é igual a zero')
   }
   
   arredond = 4  # qtd de casa decimais para os parametros
@@ -640,7 +863,7 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
         
         #pesos para a média ponderada
         pesos = abs(df_list[[c]][,'coef.corr']/sum(df_list[[c]][,'coef.corr']))
-        
+                       
         ## selecionando aleatoriamente entre 'p' ou 's'
         choice_param = sample(c('p', 's'), 1)
         
@@ -977,70 +1200,105 @@ look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
   
   return(df_list[1:length(df_list)])
 }
-look_fuzzy_set(varInd(6), 'v_price', 5, 10, 0.2)
+
+
+# a função a seguir precisa de 6 argumentos:
+# 1 - data.frame para ser encontrando as funções trapezoidais
+# 2 - coluna objetivo, para ser comparada com as outras
+# 3 - numero de linhas do resultado
+# 4 - valor da acurácia , quanto maior, maior a acurácia, (accur > 1)
+# 5 - valor mínimo para a média dos outputs da função fuzzy (< 0.5)
+
+look_fuzzy_set(rmv_wild(varInd(7), 3), 'v_price', 5, 1, 0.2)
 
 
 
-############################################################################
-###############    função para retirar valores extremos    #################
-############################################################################
+#############   Linha para testes   ############################################
+
+#gerando a função que mostra o grau de pertencimento ao conjunto de
+#boas ações
 
 
+input = rmv_wild(varInd(7),3)[,'Dividendyield']
+p = 0.2172; q = 0.2172;r = 0.2663; s = 0.6267
+boa = TrapezoidalFuzzyNumber(p, q, r, s)
 
-
-
-  # remover valores extremos
-rmv_wild = function(df, fator_multiplicativo) {
+output = c()
+for (ent in input) {
+  # Cálculo do grau de pertinência
+  membership_grade = ifelse(ent <= p | ent >= s, 0,
+                            ifelse(ent >=q & ent <= r, 1,
+                                   ifelse(ent > p & ent < q,
+                                          (ent - p) / (q - p),
+                                          (s - ent) / (s - r))))
   
-  exib_wild = function(dados, fator_multiplicativo){
-    # Obter estatísticas do boxplot
-    stats <- boxplot.stats(dados)
-    
-    # Calcular limites personalizados
-    limite_inferior <- stats$stats[2] - fator_multiplicativo * IQR(dados, na.rm = T)
-    limite_superior <- stats$stats[4] + fator_multiplicativo * IQR(dados, na.rm = T)
-    
-    # Identificar outliers
-    outliers <- dados[dados < limite_inferior | dados > limite_superior]
-    
-    # Exibir os valores dos outliers
-    return(outliers)  
-  }
-  
-  wild_row = c('so', 'para','length', 'nao', 'ser', 'zero')
-  
-  n_iter = 0
-  while (length(wild_row) != 0) {
-    wild_row = c()
-    for (c in 1:ncol(df)) {
-      if (length(exib_wild(df[,c], fator_multiplicativo)) != 0){
-        for (i in exib_wild(df[,c], fator_multiplicativo)) {
-          #numero das linhas
-          j = match(i, df[,c])
-          df[j,c] = NA
-          if (row.names(df)[j] %in% wild_row){} else {
-            wild_row = c(wild_row, row.names(df)[j])  
-          }
+  # passando os valores para o output
+  output = c(output, membership_grade)
+}
+
+cor(rmv_wild(varInd(7),3)[,'v_price'], output)
+plot(rmv_wild(varInd(7),3)[,'v_price'], output)
+abline(h = mean(output))
+abline(v = mean(rmv_wild(varInd(7),3)[,'v_price']))
+
+
+
+
+### mostrar empresas que pertencem aos 4 periodos
+#show_emp_all = function(amp){
+#  emp_cod = c()
+#  for (i in row.names(rmv_wild(varInd(4), amp))) {
+#    if (i %in% row.names(rmv_wild(varInd(5), amp)) &&
+#        i %in% row.names(rmv_wild(varInd(6), amp)) &&
+#        i %in% row.names(rmv_wild(varInd(7), amp))){
+#      if (i %in% emp_cod){} else {
+#              emp_cod = c(emp_cod, i)
+#            }
+#    }
+#  }
+#  return(emp_cod)
+#}
+#show_emp_all(3)
+
+
+################################################################################
+###########     função para tirar a mediana das amostras      ##################
+################################################################################
+
+setwd('C:/files/projects/programacao/python/acoes_data')
+data_file = read.delim('logs/tab_log.txt')
+agrup_data = function(df){
+  df_res = data.frame(matrix(ncol = ncol(df)))
+  colnames(df_res) = colnames(df)
+  c_per_i = match('per_i', colnames(df))
+  c_qtd_dias = match('qtd_dias', colnames(df))
+  c_media_coef = match('media_coef', colnames(df))
+  r_ind = c()
+  for (r in 1:nrow(df)) {
+    if (r %in% r_ind){} else{
+      r_ind_per = which(df[,c_per_i] == df[r,c_per_i])
+      r_ind_qtd_dias = which(df[,c_qtd_dias] == df[r,c_qtd_dias])
+      r_ind = c()
+      for (i in r_ind_per) {
+        if (i %in% r_ind_qtd_dias){
+          r_ind = c(r_ind, i)
         }
       }
-    }
-    rmv_na_val <- function(df) {
-      incomplete_rows <- !complete.cases(df)
-      
-      if (any(incomplete_rows)) {
-        df <- df[complete.cases(df), ]
+      mediana_coef = median(df[r_ind, c_media_coef])
+      if(is.na(df_res[1,c_media_coef])){
+        df_res[1,] = df[r_ind[1],]  
+      } else {
+        df_res = rbind(df_res, df[r_ind[1],])
       }
-      
-      return(df)
+      df_res[nrow(df_res), c_media_coef] = mediana_coef  
     }
-    
-    print(paste('empresas removidas na iteração', n_iter, ':'))
-    print(wild_row)
-    n_iter = n_iter+1
-    
-    
-    df = rmv_na_val(df)  
   }
-  
-  return(df)
+  ########         passando o tab_log_agrupado para uma planilha         #######
+  library(openxlsx)
+  fil_nam = paste('tab_log_agrupado-', Sys.time(), ".csv", sep = '')
+  fil_nam = gsub("\\s+", "", fil_nam)
+  fil_nam = gsub(':', '_', fil_nam)
+  fil_path = 'C:/files/projects/programacao/python/acoes_data/logs/'
+  write.xlsx(df_res, file = paste(fil_path, fil_nam, sep = ''))
 }
+agrup_data(data_file)

@@ -34,26 +34,148 @@ for (t in ult_bal_dates) {
 ###############    função para retirar valores extremos    #################
 ############################################################################
 
-rmv_wild = function(df, amp) {
-  for (c in 1:ncol(df)) {
-    j = which()
+# remover valores extremos
+rmv_wild = function(df, fator_multiplicativo) {
+  
+  exib_wild = function(dados, fator_multiplicativo){
+    # Obter estatísticas do boxplot
+    stats <- boxplot.stats(dados)
+    
+    # Calcular limites personalizados
+    limite_inferior <- stats$stats[2] - fator_multiplicativo * IQR(dados, na.rm = T)
+    limite_superior <- stats$stats[4] + fator_multiplicativo * IQR(dados, na.rm = T)
+    
+    # Identificar outliers
+    outliers <- dados[dados < limite_inferior | dados > limite_superior]
+    
+    # Exibir os valores dos outliers
+    return(outliers)  
   }
+  
+  wild_row = c('so', 'para','length', 'nao', 'ser', 'zero')
+  
+  while (length(wild_row) != 0) {
+    wild_row = c()
+    if (is.null(ncol(df))){
+      if (length(exib_wild(df, fator_multiplicativo)) != 0){
+        for (i in exib_wild(df, fator_multiplicativo)) {
+          #numero no df
+          j = match(i, df)
+          if (df[j] %in% wild_row){} else {
+            wild_row = c(wild_row, df[j])
+          }
+          df[j] = NA
+        }
+      }
+      rmv_na_val = function(df) {
+        if (any(!complete.cases(df))){
+          df = df[complete.cases(df)]
+        }
+        return(df)
+      }
+      
+    } else {
+      for (c in 1:ncol(df)) {
+        if (length(exib_wild(df[,c], fator_multiplicativo)) != 0){
+          for (i in exib_wild(df[,c], fator_multiplicativo)) {
+            #numero das linhas
+            j = match(i, df[,c])
+            df[j,c] = NA
+            if (row.names(df)[j] %in% wild_row){} else {
+              wild_row = c(wild_row, row.names(df)[j])  
+            }
+          }
+        }
+      }
+      rmv_na_val <- function(df) {
+      incomplete_rows <- !complete.cases(df)
+      
+      if (any(incomplete_rows)) {
+        df <- df[complete.cases(df), ]
+      }
+      
+      return(df)  
+      }
+    
+    }
+    
+    
+    df = rmv_na_val(df)  
+  }
+  
+  return(df)
 }
 
+################################################################################
+########         função para retornar o ccp sem os outliers        #############
+################################################################################
+
+ccp_sem_out = function(varx, vary, fator_multiplicativo){
+  if (length(varx) != length(vary)){
+    return('os comprimentos das variáveis devem ser iguais')
+  }
+  vec1 = varx
+  vec2 = vary
+  for (x in 1:length(vec1)) {
+    if (!(varx[x] %in% rmv_wild(vec1, fator_multiplicativo)) ||
+        !(vary[x] %in% rmv_wild(vec2, fator_multiplicativo))) {
+      varx[x] = NA; vary[x] = NA  
+    }
+  }
+  
+  rmv_na_val = function(df) {
+    if (any(!complete.cases(df))){
+      df = df[complete.cases(df)]
+    }
+    return(df)
+  }
+  return(cor(rmv_na_val(varx), rmv_na_val(vary)))
+  
+}
+
+################################################################################
+########         função para escrever tabela em uma planilha         ###########
+################################################################################
+
+##    Argumentos
+# 1 - file name
+# 2 - file path
+# 3 - extensão do arquivo (.alguma_coisa)
+# 4 - nome do arquivo
+
+escrever_res = function(df, fpath, extension, fname){
+  library(openxlsx)
+  
+  # Obter uma representação do tempo como uma única string
+  timestamp <- format(Sys.time(), "%Y-%m-%d_%H-%M-%S")
+  
+  # Criar o nome do arquivo combinando o nome do DataFrame, timestamp e extensão
+  fnam <- paste(fname, '_', timestamp, extension, sep = '')
+  fil_nam <- gsub("\\s+", "", fnam)
+  fil_nam <- gsub(':', '_', fil_nam)
+  
+  # Verificar a extensão e escrever o arquivo apropriado
+  if (extension == '.xlsx'){
+    return(write.xlsx(df, file = paste(fpath, fil_nam, extension, sep = '')))
+  }
+  if (extension == '.csv'){
+    return(write.csv(df, file = paste(fpath, fil_nam, extension, sep = '')))
+  }
+}
 
 ################################################################################
 ########     função para criar a tabela de registros de resultados    ##########
 ################################################################################
-#separando os df por períodos
 
-criar_tab = function(qtd_dias, samp_range, accurate, range_per){
+criar_tab = function(qtd_dias, samp_range, accurate, range_per, fator_multiplicativo,
+                     num_row){
   
-  tab_log = data.frame(matrix(ncol = 6)) ## data.frame para conter as colunas
+  tab_log = data.frame(matrix(ncol = 7)) ## data.frame para conter as colunas
   ## da tabela resultados
   colnames(tab_log) = c('data e hora', 'media_coef', 'num_row', 'accurate',
-                        'per_i', 'qtd_dias') ## mesma qtd de colunas
+                        'per_i', 'qtd_dias', 'fator_multiplicatovo') ## mesma qtd de colunas
   
-  for (d in 1:qtd_dias) {
+  for (d in 2:qtd_dias) {
     
     #lista para conter os períodos
     trimestres = list()
@@ -322,6 +444,9 @@ criar_tab = function(qtd_dias, samp_range, accurate, range_per){
       print(paste('DF do periodo: ', ult_bal_dates[per], ' criado'))
     }
     
+    
+    
+    
     #########       função para retornar as variações dos índices     ##############
     #########         de um período anterior a um especificado        ##############
     ################################################################################
@@ -399,8 +524,6 @@ criar_tab = function(qtd_dias, samp_range, accurate, range_per){
     }
     
     
-    
-    
     ##################            Fuzzy Sets           #############################
     library(FuzzyNumbers)
     library(devtools)
@@ -415,12 +538,38 @@ criar_tab = function(qtd_dias, samp_range, accurate, range_per){
     # 5 - valor mínimo para a média dos outputs da função fuzzy (< 0.5)
     
     look_fuzzy_set = function(df, col_obj, num_row, accurate, mean_lim_bottom) {
+      if (ncol(df) < 2) {
+        return('data.frame não tem colunas suficientes')
+      }
+      
+      if (nrow(df) <= 1){
+        return('data.frame não tem linhas suficientes')
+      }
       
       col_num = match(col_obj, colnames(df))
       
       if (mean_lim_bottom >= 0.5 || mean_lim_bottom < 0){
         stop('error: mean_lim_bottom deve ser maior que 0 e menor que
                        0.5')
+      }
+      
+      if (accurate < 1){
+        stop('error: accurate deve ser maior que 1')
+      }
+      
+      if (any(is.na(df[, col_num]))) {
+        return("A coluna objetivo contém valores ausentes.")
+      } else {
+        sd_value <- sd(df[, col_num], na.rm = TRUE)
+        
+        if (is.finite(sd_value)) {
+          if (sd_value == 0) {
+            return("O desvio padrão da coluna objetivo é igual a zero.")
+          }
+          
+        } else {
+          return("O desvio padrão não é um número finito.")
+        }
       }
       
       arredond = 4  # qtd de casa decimais para os parametros
@@ -491,7 +640,7 @@ criar_tab = function(qtd_dias, samp_range, accurate, range_per){
             #criando a nova linha do df res
             
             new_row = data.frame('indices' = colnames(df)[c], 'p' = p, 'q' = q, 'r' = r,
-                                 's' = s, "coef.corr" = cor(df[,col_num], output))
+                                 's' = s, "coef.corr" = ccp_sem_out(df[,col_num], output, fator_multiplicativo))
             
             #adicionando o valor encontrado
             df_list[[c]] = rbind(df_list[[c]], new_row)
@@ -507,7 +656,7 @@ criar_tab = function(qtd_dias, samp_range, accurate, range_per){
                                           round(prob_runif[c],2)))
             
             #pesos para a média ponderada
-            pesos = abs(df_list[[c]][,'coef.corr']/sum(df_list[[c]][,'coef.corr']))
+            pesos = abs(df_list[[c]][,'coef.corr']/sum(df_list[[c]][,'coef.corr'])) 
             
             ## selecionando aleatoriamente entre 'p' ou 's'
             choice_param = sample(c('p', 's'), 1)
@@ -793,8 +942,8 @@ criar_tab = function(qtd_dias, samp_range, accurate, range_per){
             }
             
             # condições para repetir a iteração
-            if ((1 - mean_lim_bottom) < mean(output) ||
-                mean(output) < mean_lim_bottom || is.na(cor(df[,col_num], output)) ||
+            if (length(rmv_wild(output, fator_multiplicativo)) != length(output) ||
+                is.na(ccp_sem_out(df[,col_num], output, fator_multiplicativo)) ||
                 sd(df[,col_num]) == 0 || sd(output) == 0){
               next
             }
@@ -802,10 +951,10 @@ criar_tab = function(qtd_dias, samp_range, accurate, range_per){
             #criando a possível nova linha do df res
             
             new_row = data.frame('indices' = colnames(df)[c], 'p' = p, 'q' = q, 'r' = r,
-                                 's' = s, "coef.corr" = cor(df[,col_num], output))
+                                 's' = s, "coef.corr" = ccp_sem_out(df[,col_num], output, fator_multiplicativo))
             
             #verificando se o coeficiente encontrado e maior que o mínimo
-            if (cor(df[,col_num], output) > min(df_list[[c]][,"coef.corr"])){
+            if (ccp_sem_out(df[,col_num], output, fator_multiplicativo) > min(df_list[[c]][,"coef.corr"])){
               
               #encontrando a linha  do valor minimo do coeficiente
               j_min = match(min(df_list[[c]][,"coef.corr"]), df_list[[c]][,"coef.corr"])
@@ -819,6 +968,9 @@ criar_tab = function(qtd_dias, samp_range, accurate, range_per){
               # recolocando o valor do prob_runif para 0.1
               prob_runif[c] = 0.1
               
+              print(paste('round(mean(prob_runif),3): ',
+                          round(mean(prob_runif),3), sep = '' )) 
+              
               print(paste(colnames(df)[c], 'p, q, r, s: ', p, q, r, s))
               print(paste('media_coef: ', media_coef))
               print(Sys.time())
@@ -830,6 +982,9 @@ criar_tab = function(qtd_dias, samp_range, accurate, range_per){
             
             else if (prob_runif[c] < 0.8){
               prob_runif[c] = prob_runif[c]+(0.05/accurate)
+              
+              print(paste('round(mean(prob_runif),3): ',
+                          round(mean(prob_runif),3), sep = '' )) 
             }
             
           }
@@ -847,24 +1002,50 @@ criar_tab = function(qtd_dias, samp_range, accurate, range_per){
       
       
     }  
-    
-    num_row = 10
     for (qtd_per in range_per) {
+      
       for (s in 1:samp_range) {
-        new_row = c(paste('',Sys.time(),''), look_fuzzy_set(varInd(qtd_per), 'v_price', num_row, accurate, 0.2),
-                  num_row, accurate,  qtd_per, d)
-        tab_log = rbind(tab_log, new_row)
-        View(tab_log)
+        
+        new_row = c(paste('',Sys.time(),''),
+look_fuzzy_set(varInd(qtd_per), colnames(varInd(qtd_per))[length(varInd(qtd_per))],
+               num_row, accurate, 0.2),
+                  num_row,
+                  accurate,
+                  qtd_per,
+                  d,
+                  fator_multiplicativo)
+        if (any(is.na(tab_log[1,]), na.rm = F)){
+          tab_log[1,] = new_row
+          View(tab_log)
+        } else{
+          tab_log = rbind(tab_log, new_row)
+          View(tab_log)  
+        }
       }
     }
   }
   
   ###########         passando o tab_log para uma planilha         #############
-  library(openxlsx)
-  write.xlsx(tab_log,
-             file = 'C:/files/projects/programacao/python/acoes_data/logs/tab_log.xlsx')
+  
+  ##    Argumentos
+  # 1 - file name
+  # 2 - file path
+  # 3 - extensão do arquivo (.alguma_coisa)
+  
+  escrever_res(tab_log,
+               'C:/files/projects/programacao/python/acoes_data/logs/',
+               '.csv',
+               'fuzzy_corr_log')
 
 }
 
-criar_tab(30, 5, 1, range_per = 4:7)
+#variaveis da função
+# 1 - quantidades máximas de dias de variação do preço
+# 2 - quantidade de valores em cada amostra estratificada
+# 3 - acurácia para procurar os parametros da função fuzzy
+# 4 - vetor com os períodos que serão analizados
+# 5 - fator que ira multiplicar o iqr para a retirada de outliers
+# 6 - numero de linhas de parametros em cada indice
+
+criar_tab(7, 5, 1, range_per = 4:7, 3, 5)
 
