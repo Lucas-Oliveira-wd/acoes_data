@@ -9,6 +9,25 @@ df_tri = read.csv("data/acoesb3.csv")
 
 df_day = read.csv("data/acoesb3cot.csv")
 
+#função para removendo valores infinitos
+
+rmv_inf_values_row <- function(df) {
+  rows_with_inf <- apply(df, 1, function(row) any(is.infinite(row)))
+  df <- df[!rows_with_inf, ]
+  return(df)
+}
+
+# função para remover valores NA
+
+rmv_na_val <- function(df) {
+  incomplete_rows <- !complete.cases(df)
+  
+  if (any(incomplete_rows)) {
+    df <- df[complete.cases(df), ]
+  }
+  
+  return(df)
+}
 
 #coletando as datas dos últimos balanços  
 ult_bal_dates = c()
@@ -75,7 +94,8 @@ for (per in 1:length(ult_bal_dates)){
   #df trimestral das demonstrações
   df_tri_dem = data.frame(ult_bal, roic, cres_rec5,
                           divb, disp, ativc, ativ, patl, recl12,
-                          ebit12, Lucl12, recl3, ultIns, row.names = codigo)
+                          ebit12, Lucl12, recl3, ebit3, Lucl3, ultIns,
+                          row.names = codigo)
   
   #criando as variaveis do db diário
   
@@ -207,63 +227,106 @@ for (per in 1:length(ult_bal_dates)){
   
   #############       filtrando o db        ###################################
   
-  #removendo valores infinitos
   
-  rmv_inf_values_row <- function(df) {
-    rows_with_inf <- apply(df, 1, function(row) any(is.infinite(row)))
-    df <- df[!rows_with_inf, ]
-    return(df)
-  }
   
   crit = rmv_inf_values_row(crit)
   
  
-  
-  rmv_na_val <- function(df) {
-    incomplete_rows <- !complete.cases(df)
-    
-    if (any(incomplete_rows)) {
-      df <- df[complete.cases(df), ]
-    }
-    
-    return(df)
-  }
   crit <- rmv_na_val(crit)
   
   
 #############       procurando roe's falsos, lucl e patl negativos       #######
-  emp_lucpat_neg = c()
-  for(r in 1:length(df_tri_dem[,1])){
-    if(df_tri_dem[r,'Lucl12'] < 0 && df_tri_dem[r,'patl'] < 0){
-      emp_lucpat_neg = c(emp_lucpat_neg, df_tri_dem[r, 'codigo'])
+  emp_lucpat_neg = emp_lucpat_neg3 = emp_lucrec_neg = emp_ebitrec_neg = c()
+  if (nrow(crit) > 0){
+    for(lin in 1:nrow(crit)){
+      r = match(row.names(crit)[lin], row.names(df_tri_dem))
+      if(df_tri_dem[r,'Lucl12'] < 0 && df_tri_dem[r,'patl'] < 0){
+        emp_lucpat_neg = c(emp_lucpat_neg, row.names(df_tri_dem)[r])
+      }
+      if(df_tri_dem[r,"Lucl3"] < 0 && df_tri_dem[r,'patl'] < 0){
+        emp_lucpat_neg3 = c(emp_lucpat_neg3, row.names(df_tri_dem)[r])
+      }
+      
+      if(df_tri_dem[r,'Lucl12'] < 0 && df_tri_dem[r,'recl12'] < 0){
+        emp_lucrec_neg = c(emp_lucrec_neg, row.names(df_tri_dem)[r])
+      }
+      if(df_tri_dem[r,'ebit12'] < 0 && df_tri_dem[r,'recl12'] < 0){
+        emp_ebitrec_neg = c(emp_ebitrec_neg, row.names(df_tri_dem)[r])
+      }
     }
   }
   
+  
+  #empresas com ROE falso
   print(paste('qtd de empresas com roes falsos: ', length(emp_lucpat_neg)))
   roe_err = c()
   for (r in emp_lucpat_neg){
     roe_err = c(roe_err,(df_tri_dem[r,"Lucl12"]/df_tri_dem[r,'patl'])*100)
   }
-  
   print(paste('empresa com o maior roe falso: ',
               emp_lucpat_neg[match(max(roe_err), roe_err)]))
   
+  #empresas com ROEtri falso
+  print(paste("qtd de empresas com roe_tri's falsos: ", length(emp_lucpat_neg3)))
+  roe_err_tri = c()
+  for (r in emp_lucpat_neg3){
+    roe_err_tri = c(roe_err_tri,(as.numeric(df_tri_dem[r,"Lucl3"])/df_tri_dem[r,'patl'])*100)
+  }
+  print(paste('empresa com o maior roe_tri falso: ',
+              emp_lucpat_neg3[match(max(roe_err_tri), roe_err_tri)]))
+  
+  #empresas com marg. liq. falso
+  print(paste('qtd de empresas com mar.liqs falsos: ', length(emp_lucrec_neg)))
+  marliq_err = c()
+  for (r in emp_lucrec_neg){
+    marliq_err = c(marliq_err,(df_tri_dem[r,"Lucl12"]/df_tri_dem[r,'recl12'])*100)
+  }
+  print(paste('empresa com o maior mar.liq falso: ',
+              emp_lucrec_neg[match(max(marliq_err), marliq_err)]))
+  
+  #empresas com marg. ebit. falso
+  print(paste('qtd de empresas com marg.ebit falsos: ', length(emp_ebitrec_neg)))
+  margebit_err = c()
+  for (r in emp_lucrec_neg){
+    margebit_err = c(margebit_err,(df_tri_dem[r,"ebit12"]/df_tri_dem[r,'recl12'])*100)
+  }
+  print(paste('empresa com o maior marg.ebit falso: ',
+              emp_ebitrec_neg[match(max(margebit_err), margebit_err)]))
+  
+  
+  
   ## retirando os roes falsos
   
-  print(paste('número de empresas antes da retirada dos roes falsos: ',
+  print(paste('número de empresas antes da retirada dos indices falsos: ',
               nrow(crit)))
   
   
-  for (r in 1:length(crit$ROE)){
-    if (length(emp_lucpat_neg) > 0 && row.names(crit)[r] %in% emp_lucpat_neg){
-      print(row.names(crit)[r]) #empresa retirada (tinha passado pelos
-      #2 filtros anteriores)
-      crit = crit[-r,]
+  for (r in 1:nrow(crit)){
+    if (length(row.names(crit)[r]) > 0){
+      if (length(emp_lucpat_neg) > 0 && row.names(crit)[r] %in% emp_lucpat_neg)
+        {
+        crit[r,] = NA
+      }
+      if (length(emp_lucpat_neg3) > 0 && row.names(crit)[r] %in% emp_lucpat_neg3)
+      {
+        crit[r,] = NA
+      }
+      if (length(emp_lucrec_neg) > 0 && row.names(crit)[r] %in% emp_lucrec_neg){
+        crit[r,] = NA
+      }
+      if (length(emp_ebitrec_neg) > 0 && row.names(crit)[r] %in% emp_ebitrec_neg){
+        crit[r,] = NA
+      }
     }
   }
   
-  print(paste('número de empresas depois da retirada dos roes falsos: ',
+  crit = rmv_na_val(crit)
+  
+  print(paste('número de empresas depois da retirada dos indices falsos: ',
               nrow(crit)))
+  
+  
+  
   
   #passando o df para a lista
   trimestres[[per]] = df_tri_dem
@@ -422,9 +485,10 @@ per_choice = addVarPrice(4)
 colSums(is.na(per_choice))
 
 boxplot(per_choice, range = 3)
-boxplot(rmv_wild(per_choice, 3), range = 3)
 
 per_choice=rmv_wild(per_choice, 3)
+
+boxplot(per_choice, range = 3)
 
 
 ################################################################################
