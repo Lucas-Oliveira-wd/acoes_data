@@ -159,7 +159,7 @@ escrever_res = function(df, fpath, extension, fname){
     return(write.xlsx(df, file = paste(fpath, fil_nam, extension, sep = '')))
   }
   if (extension == '.csv'){
-    return(write.csv(df, file = paste(fpath, fil_nam, extension, sep = '')))
+    return(write.csv(df, file = paste(fpath, fil_nam, sep = '')))
   }
 }
 
@@ -391,39 +391,124 @@ criar_tab = function(qtd_dias, samp_range, accurate, range_per, fator_multiplica
       ###############     chatgpt  end     ###############################
       
       
-      #############       procurando roe's falsos, lucl e patl negativos       #######
-      emp_lucpat_neg = c()
-      for(r in 1:length(df_tri_dem[,1])){
-        if(df_tri_dem[r,'Lucl12'] < 0 && df_tri_dem[r,'patl'] < 0){
-          emp_lucpat_neg = c(emp_lucpat_neg, df_tri_dem[r, 'codigo'])
+      ####       procurando indices falsos, negativo sobre negativo       ######
+      emp_lucpat_neg = emp_lucpat_neg3 = emp_lucrec_neg = emp_lucrec_neg3 =
+        emp_ebitrec_neg = c()
+      if (nrow(crit) > 0){
+        for(lin in 1:nrow(crit)){
+          r = match(row.names(crit)[lin], row.names(df_tri_dem))
+          
+          # verificando os ROEs falsos
+          if(df_tri_dem[r,'Lucl12'] < 0 && df_tri_dem[r,'patl'] < 0){
+            emp_lucpat_neg = c(emp_lucpat_neg, row.names(df_tri_dem)[r])
+          }
+          
+          # verificando os ROE(tri)s falsos
+          if(df_tri_dem[r,"Lucl3"] < 0 && df_tri_dem[r,'patl'] < 0){
+            emp_lucpat_neg3 = c(emp_lucpat_neg3, row.names(df_tri_dem)[r])
+          }
+          
+          # verificando os marg.liqs falsos
+          if(df_tri_dem[r,'Lucl12'] < 0 && df_tri_dem[r,'recl12'] < 0){
+            emp_lucrec_neg = c(emp_lucrec_neg, row.names(df_tri_dem)[r])
+          }
+          
+          # verificando os marg.liq(tri)s falsos
+          if(df_tri_dem[r,"Lucl3"] < 0 && df_tri_dem[r,"recl3"] < 0){
+            emp_lucrec_neg3 = c(emp_lucrec_neg3, row.names(df_tri_dem)[r])
+          }
+          
+          # verificando os marg.ebit falsos
+          if(df_tri_dem[r,'ebit12'] < 0 && df_tri_dem[r,'recl12'] < 0){
+            emp_ebitrec_neg = c(emp_ebitrec_neg, row.names(df_tri_dem)[r])
+          }
         }
       }
       
-      print(paste('qtd de empresas com roes falsos: ', length(emp_lucpat_neg)))
+      
+      #empresas com ROE falso
       roe_err = c()
       for (r in emp_lucpat_neg){
         roe_err = c(roe_err,(df_tri_dem[r,"Lucl12"]/df_tri_dem[r,'patl'])*100)
       }
-      
+      print(paste('qtd de empresas com roes falsos: ', length(roe_err)))
       print(paste('empresa com o maior roe falso: ',
                   emp_lucpat_neg[match(max(roe_err), roe_err)]))
       
-      ## retirando os roes falsos
+      #empresas com ROEtri falso
+      roe_err_tri = c()
+      for (r in emp_lucpat_neg3){
+        roe_err_tri = c(roe_err_tri,(as.numeric(df_tri_dem[r,"Lucl3"])/df_tri_dem[r,'patl'])*100)
+      }
+      print(paste("qtd de empresas com roe_tri's falsos: ", length(roe_err_tri)))
+      print(paste('empresa com o maior roe_tri falso: ',
+                  emp_lucpat_neg3[match(max(roe_err_tri), roe_err_tri)]))
       
-      print(paste('número de empresas antes da retirada dos roes falsos: ',
+      #empresas com marg. liq. falso
+      marliq_err = c()
+      for (r in emp_lucrec_neg){
+        marliq_err = c(marliq_err,
+                       (df_tri_dem[r,"Lucl12"]/df_tri_dem[r,'recl12'])*100)
+      }
+      print(paste('qtd de empresas com mar.liqs falsos: ', length(marliq_err)))
+      print(paste('empresa com o maior mar.liq falso: ',
+                  emp_lucrec_neg[match(max(marliq_err), marliq_err)]))
+      
+      #empresas com marg. liq.tri falso
+      marliq_err_tri = c()
+      for (r in emp_lucrec_neg3){
+        marliq_err_tri = c(marliq_err_tri,
+                           (df_tri_dem[r,"Lucl3"]/df_tri_dem[r,'recl3'])*100)
+      }
+      print(paste('qtd de empresas com mar.liq_tris falsos: ',
+                  length(marliq_err_tri)))
+      print(paste('empresa com o maior mar.liq_tri falso: ',
+                  emp_lucrec_neg3[match(max(marliq_err_tri), marliq_err_tri)]))
+      
+      #empresas com marg. ebit. falso
+      print(paste('qtd de empresas com marg.ebit falsos: ', length(emp_ebitrec_neg)))
+      margebit_err = c()
+      for (r in emp_lucrec_neg){
+        margebit_err = c(margebit_err,(df_tri_dem[r,"ebit12"]/df_tri_dem[r,'recl12'])*100)
+      }
+      print(paste('empresa com o maior marg.ebit falso: ',
+                  emp_ebitrec_neg[match(max(margebit_err), margebit_err)]))
+      
+      
+      
+      ## retirando os indices falsos
+      
+      print(paste('número de empresas antes da retirada dos indices falsos: ',
                   nrow(crit)))
       
       
-      for (r in 1:length(crit$ROE)){
-        if (length(emp_lucpat_neg) < 0 && row.names(crit)[r] %in% emp_lucpat_neg){
-          print(row.names(crit)[r]) #empresa retirada (tinha passado pelos
-          #2 filtros anteriores)
-          crit = crit[-r,]
+      for (r in 1:nrow(crit)){
+        if (length(row.names(crit)[r]) > 0){
+          if (length(emp_lucpat_neg) > 0 && row.names(crit)[r] %in% emp_lucpat_neg)
+          {
+            crit[r,] = NA
+          }
+          if (length(emp_lucpat_neg3) > 0 && row.names(crit)[r] %in% emp_lucpat_neg3)
+          {
+            crit[r,] = NA
+          }
+          if (length(emp_lucrec_neg) > 0 && row.names(crit)[r] %in% emp_lucrec_neg){
+            crit[r,] = NA
+          }
+          if (length(emp_lucrec_neg3) > 0 && row.names(crit)[r] %in% emp_lucrec_neg3){
+            crit[r,] = NA
+          }
+          if (length(emp_ebitrec_neg) > 0 && row.names(crit)[r] %in% emp_ebitrec_neg){
+            crit[r,] = NA
+          }
         }
       }
       
-      print(paste('número de empresas depois da retirada dos roes falsos: ',
+      crit = rmv_na_val(crit)
+      
+      print(paste('número de empresas depois da retirada dos indices falsos: ',
                   nrow(crit)))
+      
       
       #passando o df para a lista
       trimestres[[per]] = df_tri_dem
@@ -599,7 +684,7 @@ criar_tab = function(qtd_dias, samp_range, accurate, range_per, fator_multiplica
           input = df[,c]
           
           if (diff(range(input)) == 0){
-            stop(paste('errot: coluna ', colnames(df)[c],
+            stop(paste('error: coluna ', colnames(df)[c],
                        'tem amplitude igual a zero, sem desvio padrão'))
           }
           
@@ -1047,5 +1132,5 @@ look_fuzzy_set(varInd(qtd_per), colnames(varInd(qtd_per))[length(varInd(qtd_per)
 # 5 - fator que ira multiplicar o iqr para a retirada de outliers
 # 6 - numero de linhas de parametros em cada indice
 
-criar_tab(7, 5, 1, range_per = 4:7, 3, 5)
+criar_tab(7, 5, 1, range_per = 4:7, 5, 5)
 

@@ -29,6 +29,37 @@ rmv_na_val <- function(df) {
   return(df)
 }
 
+################################################################################
+########         função para escrever tabela em uma planilha         ###########
+################################################################################
+
+##    Argumentos
+# 1 - file name
+# 2 - file path
+# 3 - extensão do arquivo (.alguma_coisa)
+# 4 - nome do arquivo
+
+escrever_res = function(df, fpath, extension, fname){
+  library(openxlsx)
+  
+  # Obter uma representação do tempo como uma única string
+  timestamp <- format(Sys.time(), "%Y-%m-%d_%H-%M-%S")
+  
+  # Criar o nome do arquivo combinando o nome do DataFrame, timestamp e extensão
+  fnam <- paste(fname, '_', timestamp, extension, sep = '')
+  fil_nam <- gsub("\\s+", "", fnam)
+  fil_nam <- gsub(':', '_', fil_nam)
+  
+  # Verificar a extensão e escrever o arquivo apropriado
+  if (extension == '.xlsx'){
+    return(write.xlsx(df, file = paste(fpath, fil_nam, extension, sep = '')))
+  }
+  if (extension == '.csv'){
+    return(write.csv(df, file = paste(fpath, fil_nam, extension, sep = '')))
+  }
+}
+
+
 #coletando as datas dos últimos balanços  
 ult_bal_dates = c()
 for (i in 1:nrow(df_tri)){
@@ -236,19 +267,30 @@ for (per in 1:length(ult_bal_dates)){
   
   
 #############       procurando roe's falsos, lucl e patl negativos       #######
-  emp_lucpat_neg = emp_lucpat_neg3 = emp_lucrec_neg = emp_ebitrec_neg = c()
+  emp_lucpat_neg = emp_lucpat_neg3 = emp_lucrec_neg = emp_lucrec_neg3 =
+    emp_ebitrec_neg = c()
   if (nrow(crit) > 0){
     for(lin in 1:nrow(crit)){
       r = match(row.names(crit)[lin], row.names(df_tri_dem))
+      
+      # verificando os ROEs falsos
       if(df_tri_dem[r,'Lucl12'] < 0 && df_tri_dem[r,'patl'] < 0){
         emp_lucpat_neg = c(emp_lucpat_neg, row.names(df_tri_dem)[r])
       }
+      
+      # verificando os ROE(tri)s falsos
       if(df_tri_dem[r,"Lucl3"] < 0 && df_tri_dem[r,'patl'] < 0){
         emp_lucpat_neg3 = c(emp_lucpat_neg3, row.names(df_tri_dem)[r])
       }
       
+      # verificando os marg.liqs falsos
       if(df_tri_dem[r,'Lucl12'] < 0 && df_tri_dem[r,'recl12'] < 0){
         emp_lucrec_neg = c(emp_lucrec_neg, row.names(df_tri_dem)[r])
+      }
+      
+      # verificando os marg.liq(tri)s falsos
+      if(df_tri_dem[r,"Lucl3"] < 0 && df_tri_dem[r,"recl3"] < 0){
+        emp_lucrec_neg3 = c(emp_lucrec_neg3, row.names(df_tri_dem)[r])
       }
       if(df_tri_dem[r,'ebit12'] < 0 && df_tri_dem[r,'recl12'] < 0){
         emp_ebitrec_neg = c(emp_ebitrec_neg, row.names(df_tri_dem)[r])
