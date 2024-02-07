@@ -88,6 +88,8 @@ crit_tri = list()
 
 qtd_dias = 6*30 #qtd de dias de variação
 
+qtd_dias_est = 7   #qtd de dias para o mercado estabelecer o preço
+
 #criando os valores dos critérios
 for (per in 1:length(ult_bal_dates)){
   print(paste('Criando o DF para o periodo: ', ult_bal_dates[per]))
@@ -152,8 +154,10 @@ for (per in 1:length(ult_bal_dates)){
           
           # verificando se o valor da ultima cotação da iteração atual é maior que
           #o valor pertencente à variável e menor ou igual a data de inserção
+          # acrescida dos dias de equilibrio de preço do mercado
           if (as.Date(df_day[i,"ultCot"]) > as.Date(df_day[j,"ultCot"]) &&
-              as.Date(df_day[i,'ultCot']) <= as.Date(ultIns[j_dem])){
+              as.Date(df_day[i,'ultCot']) <=
+              as.Date(ultIns[j_dem]) + qtd_dias_est){
             
             #se for maior: retirando o valor de cada variável correspondente à
             #posição do valor pertencente
@@ -447,13 +451,13 @@ escrever_res (corr_matrix,
 
 # regressão com algumas variáveis retiradas (valor mais alto das corr altas)
 model_fit = lm(per_choice$`Preço da Ação`~per_choice$LPA+
-                  per_choice$`LPA (tri)`+per_choice$VPA+
-                  per_choice$`Caixa/Ação`+
-                  per_choice$`Ativos Circulantes/Ação`+
-                  per_choice$`Ativos/Ação`+per_choice$`Dív Bruta/Ação`+
-                  per_choice$`EBIT/Ação`+per_choice$`EBIT/Ação (tri)`+
-                  per_choice$Dividendos+
-                  per_choice$`Receita/Ação (tri)`)
+                 per_choice$`LPA (tri)`+per_choice$VPA+
+                 per_choice$`Caixa/Ação`+
+                 per_choice$`Ativos Circulantes/Ação`+
+                 per_choice$`Ativos/Ação`+per_choice$`Dív Bruta/Ação`+
+                 per_choice$`EBIT/Ação`+per_choice$`EBIT/Ação (tri)`+
+                 per_choice$Dividendos+
+                 per_choice$`Receita/Ação (tri)`)
 
 summary(model_fit)
 
@@ -463,7 +467,7 @@ model_fit2 = lm(per_choice$`Preço da Ação`~per_choice$LPA+
                   per_choice$`Caixa/Ação`+
                   per_choice$`Ativos Circulantes/Ação`+
                   per_choice$`Ativos/Ação`+per_choice$`Dív Bruta/Ação`+
-                  per_choice$`EBIT/Ação (tri)`+
+                  per_choice$`EBIT/Ação`+
                   per_choice$Dividendos+
                   per_choice$`Receita/Ação (tri)`)
 
@@ -475,7 +479,7 @@ model_fit3 = lm(per_choice$`Preço da Ação`~per_choice$LPA+
                   per_choice$`Caixa/Ação`+
                   per_choice$`Ativos Circulantes/Ação`+
                   per_choice$`Dív Bruta/Ação`+
-                  per_choice$`EBIT/Ação (tri)`+
+                  per_choice$`EBIT/Ação`+
                   per_choice$Dividendos+
                   per_choice$`Receita/Ação (tri)`)
 
@@ -484,42 +488,48 @@ summary(model_fit3)
 # regressão com algumas variáveis retiradas (valor mais alto)
 model_fit4 = lm(per_choice$`Preço da Ação`~per_choice$LPA+
                   per_choice$`LPA (tri)`+per_choice$VPA+
-                  per_choice$`EBIT/Ação`+per_choice$`EBIT/Ação (tri)`+
-                  per_choice$Dividendos+per_choice$`Receita/ Ação`+
+                  per_choice$`Caixa/Ação`+
+                  per_choice$`Ativos Circulantes/Ação`+
+                  per_choice$`EBIT/Ação`+
+                  per_choice$Dividendos+
                   per_choice$`Receita/Ação (tri)`)
 
 summary(model_fit4)
 
 # regressão com algumas variáveis retiradas (valor mais alto)
-model_fit5 = lm(per_choice$`Preço da Ação`~
+model_fit5 = lm(per_choice$`Preço da Ação`~per_choice$LPA+
                   per_choice$`LPA (tri)`+per_choice$VPA+
-                  per_choice$`EBIT/Ação`+per_choice$`EBIT/Ação (tri)`+
-                  per_choice$Dividendos+per_choice$`Receita/ Ação`+
+                  per_choice$`Caixa/Ação`+
+                  per_choice$`Ativos Circulantes/Ação`+
+                  per_choice$`EBIT/Ação`+
                   per_choice$`Receita/Ação (tri)`)
 
 summary(model_fit5)
 
 # regressão com algumas variáveis retiradas (valor mais alto)
-model_fit6 = lm(per_choice$`Preço da Ação`~
-                  per_choice$`LPA (tri)`+per_choice$VPA+
+model_fit6 = lm(per_choice$`Preço da Ação`~per_choice$LPA+
+                  per_choice$VPA+
+                  per_choice$`Caixa/Ação`+
+                  per_choice$`Ativos Circulantes/Ação`+
                   per_choice$`EBIT/Ação`+
-                  per_choice$Dividendos+per_choice$`Receita/ Ação`+
                   per_choice$`Receita/Ação (tri)`)
 
 summary(model_fit6)
 
 # regressão com algumas variáveis retiradas (valor mais alto)
-model_fit7 = lm(per_choice$`Preço da Ação`~
-                  per_choice$`LPA (tri)`+per_choice$VPA+
-                  per_choice$Dividendos+per_choice$`Receita/ Ação`+
-                  per_choice$`Receita/Ação (tri)`)
+model_fit7 = lm(per_choice$`Preço da Ação`~per_choice$LPA+
+                  per_choice$VPA+
+                  per_choice$`Caixa/Ação`+
+                  per_choice$`Ativos Circulantes/Ação`+
+                  per_choice$`EBIT/Ação`)
 summary(model_fit7)
 
 # regressão com algumas variáveis retiradas (valor mais alto)
-model_fit8 = lm(per_choice$`Preço da Ação`~
-                  per_choice$`LPA (tri)`+per_choice$VPA+
-                  per_choice$Dividendos+
-                  per_choice$`Receita/Ação (tri)`)
+model_fit8 = lm(per_choice$`Preço da Ação`~per_choice$LPA+
+                  per_choice$VPA+
+                  per_choice$`Caixa/Ação`+
+                  per_choice$`Ativos Circulantes/Ação`+
+                  per_choice$`EBIT/Ação`)
 
 summary(model_fit8)
 

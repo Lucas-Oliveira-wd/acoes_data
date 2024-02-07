@@ -108,6 +108,28 @@ rmv_wild = function(df, fator_multiplicativo) {
   return(df)
 }
 
+#######   função para mudar um vetor para apenas valores positivos    ##########
+trans_only_pos = function(vec) {
+  out = c()
+  for(i in 1:length(vec)){ out = c(out, vec[i]+abs(min(vec)))}
+  
+  # verificando a veracidade dessa função
+  if (cor(out, vec) != 1){
+    stop('error: correlação entre entre entrada e saída não é 1')
+  }
+  if (min(out) != 0){
+    stop('error: minimo da saída não é igual a 0')
+  }
+  if (max(out) != diff(range(vec))){
+    stop('error: maximo da saida não é igual a amplitude da entrada')
+  }
+  if (sd(vec) != sd(out)){
+    stop('error: desvios padrões da entrada e saida são diferentes')
+  }
+  
+  return(out)
+  }
+
 ################################################################################
 ########         função para retornar o ccp sem os outliers        #############
 ################################################################################
@@ -169,13 +191,11 @@ escrever_res = function(df, fpath, extension, fname){
 ########     função para criar a tabela de registros de resultados    ##########
 ################################################################################
 
-criar_tab = function(qtd_dias, samp_range, accurate, range_per,
-                     fator_multiplicativo,
-                     num_row){
+criar_tab = function(qtd_dias, range_per, fator_multiplicativo){
   
-  tab_log = data.frame(matrix(ncol = 7)) ## data.frame para conter as colunas
+  tab_log = data.frame(matrix(ncol = 5)) ## data.frame para conter as colunas
   ## da tabela resultados
-  colnames(tab_log) = c('data e hora', 'media_coef', 'num_row', 'accurate',
+  colnames(tab_log) = c('data e hora', 'media_coef',
                         'per_i', 'qtd_dias',
                         'fator_multiplicatovo')## mesma qtd de colunas
   
@@ -653,19 +673,14 @@ criar_tab = function(qtd_dias, samp_range, accurate, range_per,
     }
     
     
-    ##################            Fuzzy Sets           #########################
-    library(FuzzyNumbers)
-    library(devtools)
-    
-    
+    #########     procurando as melhores correlações      #####################
     
     # a função a seguir precisa de 6 argumentos:
     # 1 - data.frame para ser encontrando as funções trapezoidais
     # 2 - coluna objetivo, para ser comparada com as outras
-    # 3 - numero de linhas do resultado
-    # 4 - valor da acurácia , quanto maior, maior a acurácia, (accur > 1)
     
-    look_fuzzy_set = function(df, col_obj, num_row, accurate) {
+      look_fubest_corr = function(df, col_obj) {
+        df = rmv_wild(df, fator_multiplicativo)
       if (ncol(df) < 2) {
         return('data.frame não tem colunas suficientes')
       }
@@ -675,10 +690,8 @@ criar_tab = function(qtd_dias, samp_range, accurate, range_per,
       }
       
       col_num = match(col_obj, colnames(df))
+      output = df[,col_num]
       
-      if (accurate < 1){
-        stop('error: accurate deve ser maior que 1')
-      }
       
       if (any(is.na(df[, col_num]))) {
         return("A coluna objetivo contém valores ausentes.")
@@ -695,483 +708,50 @@ criar_tab = function(qtd_dias, samp_range, accurate, range_per,
         }
       }
       
-      arredond = 4  # qtd de casa decimais para os parametros
       
-      # lista para conter as probabiblidades dos runifs
-      prob_runif = c()
-      
-      # lista para conter os df com os valores dos paramentros
+      # lista para conter os df com os valores das corr
       df_list = list()
       for (c in 1:ncol(df)){
         if (colnames(df)[c] != col_obj){
-          df_list[[c]] = data.frame(matrix(ncol = 6, nrow = 0))
-          colnames(df_list[[c]]) = c("indices", "p", "q", "r", "s", "coef.corr")
+          df_list[[c]] = data.frame(matrix(ncol = 2, nrow = 0))
+          colnames(df_list[[c]]) = c("indices", "coef.corr")
           
-          prob_runif = c(prob_runif, 0) # valor deve ser menor que 0.9
-          # por causa do break  
         }
       }
       
       
       ## criando o indice de coluna
       
-      c = 1
-      while(round(mean(prob_runif),3) < 0.8){
+      for (c in 1:ncol(df)) {
         
         if (colnames(df)[c] != col_obj){
           input = df[,c]
-          print(paste('any(is.na(input)):', any(is.na(input))))
           
           if (diff(range(input)) == 0){
             stop(paste('error: coluna ', colnames(df)[c],
                        'tem amplitude igual a zero, sem desvio padrão'))
           }
           
-          #############       improve parameters search       ##################
-          ######################################################################
-        
-          if (nrow(df_list[[c]]) < num_row){
-            
-            
-            
-            # Calculando os 5 percentis
-            percentis <- quantile(input, probs = seq(0, 1, 1/5)) # 1/5 é para
-            #encontrar 4 valores
-            
-            # definindo os valores iniciais dos parametros
-            p = round(percentis[2], arredond)
-            q = round(percentis[3], arredond)
-            r = round(percentis[4], arredond)
-            s = round(percentis[5], arredond)
-            
-            #gerando a função que mostra o grau de pertencimento ao conjunto de
-            #boas ações
-            boa = TrapezoidalFuzzyNumber(p, q, r, s)
-            
-            output = c()
-            for (ent in input) {
-              # Cálculo do grau de pertinência
-              membership_grade = ifelse(ent <= p | ent >= s, 0,
-                                        ifelse(ent >=q & ent <= r, 1,
-                                               ifelse(ent > p & ent < q,
-                                                      (ent - p) / (q - p),
-                                                      (s - ent) / (s - r))))
-              
-              # passando os valores para o output
-              output = c(output, membership_grade)
-            }
+          
             
             #criando a nova linha do df res
             
-            new_row = data.frame('indices' = colnames(df)[c], 'p' = p, 'q' = q,
-                                 'r' = r, 's' = s,
-                            "coef.corr" = ccp_sem_out(df[,col_num],
-                                                        output,
-                                                        fator_multiplicativo))
-            
-            #adicionando o valor encontrado
-            df_list[[c]] = rbind(df_list[[c]], new_row)
-            
-            
-            
-            #########       continues of improvement       #####################
-            ####################################################################
-          } else {
-            
-            p = q = r = s = NULL
-            print(paste('round(prob_runif[c],2):',
-                        round(prob_runif[c],2)))
-            choice_path = sample(c('rnorm', 'runif'), 1,
-                                 prob = c(1 - round(prob_runif[c],2),
-                                          round(prob_runif[c],2)))
-            
-            #pesos para a média ponderada
-            pesos =
-              abs(df_list[[c]][,'coef.corr']/sum(df_list[[c]][,'coef.corr']))
-            print('pesos: ')
-            print(pesos)
-            
-            ## selecionando aleatoriamente entre 'p' ou 's'
-            choice_param = sample(c('p', 's'), 1)
-            
-            multidesv_times = 1/70 #multiplicador da fração entre as amplitudes
-            
-            p_col = df_list[[c]][,'p']
-            q_col = df_list[[c]][,'q']
-            r_col = df_list[[c]][,'r']
-            s_col = df_list[[c]][,'s']
-            
-            
-            #verificando qual coeficiente foi escolhido
-            if (choice_param == 'p'){
-              #se foi 'p' gerando os parametros do menor para o maior
-              
-              #################     p       ##################################
-              choice_path
-              #verificando a escolha do caminho, runif ou rnorm
-              if (choice_path == 'rnorm'){
-                
-                #####   verificando se o desvio padrão é igual a zero
-                if (sd(p_col) == 0){
-                  if (mean(p_col) == 0){
-                    p = round(rnorm(1, sample(p_col, 1, prob = pesos),
-                                    diff(range(input))), arredond)
-                  } else {
-                    p = round(rnorm(1, sample(p_col, 1,prob = pesos),
-                                    sd = abs(mean(p_col))), arredond)
-                  }
-                } else {
-                  desv_times =
-                    multidesv_times*diff(range(input))/diff(range(p_col))
-                  
-                  p = round(rnorm(1, mean = sample(p_col, 1, prob = pesos),
-                                  desv_times*sd(p_col)), arredond)
-                }
-                if (p < min(input)){
-                  p = min(input)
-                } else if (p > max(input)){
-                  p = max(input)
-                }
-              } else {
-                p = round(sample(input, 1), arredond)
-              }
-              
-              
-              #################     q     ###################################
-              choice_path
-              #verificando a escolha do caminho, runif ou rnorm
-              if (choice_path == 'rnorm'){
-                #####   verificando se o desvio padrão é igual a zero
-                if (sd(q_col) == 0){
-                  if (mean(q_col) == 0){
-                    q = round(rnorm(1, sample(q_col, 1, prob = pesos),
-                                    diff(range(input))), arredond)
-                    print(paste('q12:', q))
-                  } else {
-                    q = round(rnorm(1, sample(q_col, 1, prob = pesos),
-                                    abs(mean(q_col))), arredond)
-                    print(paste('q11:', q))
-                  }
-                } else {
-                  desv_times =
-                    multidesv_times*diff(range(input))/diff(range(q_col))
-                  
-                  q = round(rnorm(1, sample( q_col, 1, prob = pesos),
-                                  desv_times*sd(q_col)), arredond)
-                  print(paste('q10:', q))
-                }
-                if (q < p){
-                  q = p
-                  print(paste('q9:', q))
-                } else if (q > max(input)){
-                  q = max(input)
-                  print(paste('q8:', q))
-                }
-              } else {
-q = round(sample(sort(input)[match(p,sort(input)):(length(input))], 1), arredond)
-
-print('sample(sort(input)[match(p,sort(input)):(length(input))], 1):')
-sample(sort(input)[match(p,sort(input)):(length(input))], 1)
-
-print(paste('round(sample(sort(input)[match(p,sort(input)):(length(input))], 1), arredond):',
-            round(sample(sort(input)[match(p,sort(input)):(length(input))], 1), arredond)))
-
-print(paste('sort(input)[match(p,sort(input)):(length(input))]:',
-            sort(input)[match(p,sort(input)):(length(input))]))
-
-print(paste('length(input):', length(input)))
-                
-                print('match(p,sort(input)):(length(input)):')
-                print(match(p,sort(input)):(length(input)))
-                
-                print(paste('match(p,sort(input)):', match(p,sort(input))))
-                
-                print(paste('q7:', q))
-                print(paste('p:', p))
-              
-                         }
-              
-              
-              #################     r     ###################################
-              choice_path
-              #verificando a escolha do caminho, runif ou rnorm
-              if (choice_path == 'rnorm'){
-                #####   verificando se o desvio padrão é igual a zero
-                if (sd(r_col) == 0){
-                  if (mean(r_col) == 0){
-                    r = round(rnorm(1, sample(r_col, 1, prob = pesos),
-                                    diff(range(input))), arredond)
-                  } else {
-                    r = round(rnorm(1, sample(r_col, 1, prob = pesos),
-                                    abs(mean(r_col))), arredond)
-                  }
-                } else {
-                  desv_times =
-                    multidesv_times*diff(range(input))/diff(range(r_col))
-                  
-                  r = round(rnorm(1, sample(r_col, 1, prob = pesos),
-                                  desv_times*sd(r_col)), arredond)
-                }
-                if (r < q){
-                  r = q
-                } else if (r > max(input)){
-                  r = max(input)
-                }
-              } else {
-                print(paste('q14:', q))
-                print(paste('sort(input)[length(input)]: ',
-                            sort(input)[length(input)]))
-                sort(input)[length(input)]
-                r = sample(sort(input)[match(q,sort(input)):length(input)], 1)
-                if (r < q){
-                  r = q
-                }
-              }
-              
-              
-              #################     s     ###################################
-              choice_path
-              #verificando a escolha do caminho, runif ou rnorm
-              if (choice_path == 'rnorm'){
-                #####   verificando se o desvio padrão é igual a zero
-                if (sd(s_col) == 0){
-                  if (mean(s_col) == 0){
-                    s = round(rnorm(1, sample(s_col, 1, prob = pesos),
-                                    diff(range(input))), arredond)
-                  } else {
-                    s = round(rnorm(1, sample(s_col, 1, prob = pesos),
-                                    abs(mean(s_col))), arredond)
-                  }
-                } else {
-                  desv_times =
-                    multidesv_times*diff(range(input))/diff(range(s_col))
-                  
-                  s = round(rnorm(1, sample(s_col, 1, prob = pesos),
-                                  desv_times*sd(s_col)), arredond)
-                }
-                if (s < r){
-                  s = r
-                } else if (s > max(input)){
-                  s = max(input)
-                }
-              } else {
-                s = sample(sort(input)[match(r,sort(input)):length(input)], 1)
-                if (s < r){
-                  s = r
-                }
-              } 
-              
-            } else {
-              #se foi o 's' gerando os parametros do maior para o menor
-              
-              #################     s     ###################################
-              choice_path
-              #verificando a escolha do caminho, runif ou rnorm
-              if (choice_path == 'rnorm'){
-                #####   verificando se o desvio padrão é igual a zero
-                if (sd(s_col) == 0){
-                  if (mean(s_col) == 0){
-                    s = round(rnorm(1, sample(s_col, 1, prob = pesos),
-                                    diff(range(input))), arredond)
-                  } else {
-                    s = round(rnorm(1, sample(s_col, 1, prob = pesos),
-                                    abs(mean(s_col))), arredond)
-                  }
-                } else {
-                  desv_times =
-                    multidesv_times*diff(range(input))/diff(range(s_col))
-                  
-                  s = round(rnorm(1, sample(s_col, 1, prob = pesos),
-                                  desv_times*sd(s_col)), arredond)
-                }
-                if (s > max(input)){
-                  s = max(input)
-                } else if (s < min(input)){
-                  s = min(input)
-                }
-              } else {
-                s = round(sample(input, 1), arredond)
-              }
-              
-              
-              #################     r     ###################################
-              choice_path
-              #verificando a escolha do caminho, runif ou rnorm
-              if (choice_path == 'rnorm'){
-                #####   verificando se o desvio padrão é igual a zero
-                if (sd(r_col) == 0){
-                  if (mean(r_col) == 0){
-                    r = round(rnorm(1, sample(r_col, 1, prob = pesos),
-                                    diff(range(input))), arredond)
-                  } else {
-                    r = round(rnorm(1, sample(r_col, 1, prob = pesos),
-                                    abs(mean(r_col))), arredond)
-                  }
-                } else {
-                  desv_times =
-                    multidesv_times*diff(range(input))/diff(range(r_col))
-                  
-                  r = round(rnorm(1, sample(r_col, 1, prob = pesos),
-                                  desv_times*sd(r_col)), arredond)
-                }
-                if (r > s){
-                  r = s
-                } else if (r < min(input)){
-                  r = min(input)
-                }
-              } else {
-                r = round(sample(sort(input)[1:match(s,sort(input))],
-                                                       1),arredond)
-              }
-              
-              
-              #################     q     ###################################
-              choice_path
-              #verificando a escolha do caminho, runif ou rnorm
-              if (choice_path == 'rnorm'){
-                #####   verificando se o desvio padrão é igual a zero
-                if (sd(q_col) == 0){
-                  if (mean(q_col) == 0){
-                    q = round(rnorm(1, sample(q_col, 1, prob = pesos),
-                                    diff(range(input))), arredond)
-                    print(paste('q6:', q))
-                  } else {
-                    q = round(rnorm(1, sample(q_col, 1, prob = pesos),
-                                    abs(mean(q_col))), arredond)
-                    print(paste('q5:', q))
-                  }
-                } else {
-                  desv_times =
-                    multidesv_times*diff(range(input))/diff(range(q_col))
-                  
-                  q = round(rnorm(1, sample(q_col, 1, prob = pesos),
-                                  desv_times*sd(q_col)), arredond)
-                  print(paste('q4:', q))
-                }
-                if (q > r){
-                  q = r
-                  print(paste('q3:', q))
-                } else if (q < min(input)){
-                  q = min(input)
-                  print(paste('q2:', q))
-                }
-              } else {
-                q = round(sample(sort(input)[1:match(r,sort(input))], 1),
-                          arredond)
-                print(paste('q1:', q))
-              }
-              
-              
-              #################     p     ###################################
-              choice_path
-              #verificando a escolha do caminho, runif ou rnorm
-              if (choice_path == 'rnorm'){
-                #####   verificando se o desvio padrão é igual a zero
-                if (sd(p_col) == 0){
-                  if (mean(p_col) == 0){
-                    p = round(rnorm(1, sample(p_col, 1, prob = pesos),
-                                    diff(range(input))), arredond)
-                  } else {
-                    p = round(rnorm(1, sample(p_col, 1, prob = pesos),
-                                    sd = abs(mean(p_col))), arredond)
-                  }
-                } else {
-                  desv_times =
-                    multidesv_times*diff(range(input))/diff(range(p_col))
-                  
-                  p = round(rnorm(1, sample(p_col, 1, prob = pesos),
-                                  desv_times*sd(p_col)), arredond)
-                }
-                if (p > q){
-                  p = q
-                } else if (p < min(input)){
-                  p = min(input)
-                }
-              } else {
-                print(paste('q13:', q))
-                p = round(sample(sort(input)[1:match(q,sort(input))], 1),
-                          arredond)
-              }
-            }
-            
-            
-            #gerando a função que mostra o grau de pertencimento ao conjunto de
-            #boas ações
-            boa = TrapezoidalFuzzyNumber(p, q, r, s)
-            
-            output = c()
-            for (ent in input) {
-              # Cálculo do grau de pertinência
-              membership_grade = ifelse(ent <= p | ent >= s, 0,
-                                        ifelse(ent >=q & ent <= r, 1,
-                                               ifelse(ent > p & ent < q,
-                                                      (ent - p) / (q - p),
-                                                      (s - ent) / (s - r))))
-              
-              # passando os valores para o output
-              output = c(output, membership_grade)
-            }
-            
-            # condições para repetir a iteração
-            if (length(rmv_wild(output, fator_multiplicativo)) !=
-                length(output) || is.na(ccp_sem_out(df[,col_num], output,
-                                                    fator_multiplicativo)) ||
-                sd(df[,col_num]) == 0 || sd(output) == 0){
-              next
-            }
-            
-            #criando a possível nova linha do df res
-            
-            new_row = data.frame('indices' = colnames(df)[c], 'p' = p, 'q' = q,
-                                 'r' = r, 's' = s,
-                                 "coef.corr" = ccp_sem_out(df[,col_num], output,
-                                                        fator_multiplicativo))
-            
-            #verificando se o coeficiente encontrado e maior que o mínimo
-            if (ccp_sem_out(df[,col_num], output, fator_multiplicativo) >
-                min(df_list[[c]][,"coef.corr"])){
-              
-              #encontrando a linha  do valor minimo do coeficiente
-              j_min = match(min(df_list[[c]][,"coef.corr"]),
-                            df_list[[c]][,"coef.corr"])
-              
-              #removendo a linha do valor mínimo
-              df_list[[c]] = df_list[[c]][-j_min,]
+            new_row = data.frame('indices' = colnames(df)[c],
+                                 "coef.corr" = abs(cor(input, output)))
               
               #adicionando o valor encontrado
               df_list[[c]] = rbind(df_list[[c]], new_row)
               
-              # recolocando o valor do prob_runif para 0.1
-              prob_runif[c] = 0.1
-              
-              print(paste('round(mean(prob_runif),3): ',
-                          round(mean(prob_runif),3), sep = '' )) 
-              
-              print(paste(colnames(df)[c], 'p, q, r, s: ', p, q, r, s))
-              print(paste('media_coef: ', media_coef))
-              print(Sys.time())
-              print(paste("mean(output): ", mean(output)))
-              
               plot(input, output, xlab = colnames(df)[c])
-              plot(boa, xlab = colnames(df)[c])
-            }
-            
-            else if (prob_runif[c] < 0.8){
-              prob_runif[c] = prob_runif[c]+(0.1/accurate)
-              
-              print(paste('round(mean(prob_runif),3): ',
-                          round(mean(prob_runif),3), sep = '' )) 
-            }
-            
-          }
+
           
           media_all = c()
           for (d in df_list) {
-            media_all = c(media_all, max(d[,'coef.corr']))
+            media_all = c(media_all, d[1,'coef.corr'])
           }
           media_coef = mean(media_all)
         }
-        c = ifelse(c==ncol(df)-1,1,c+1)
+        
       }
       
       return(media_coef)
@@ -1180,12 +760,11 @@ print(paste('length(input):', length(input)))
     }  
     for (qtd_per in range_per) {
       
-      for (s in 1:samp_range) {
+      for (fator_multiplicativo in seq(2, fac_max, 0.5)) {
         
         new_row = c(paste('',format(Sys.time(), "%Y-%m-%d_%H-%M-%S"),''),
-look_fuzzy_set(varInd(qtd_per),
-               colnames(varInd(qtd_per))[length(varInd(qtd_per))],
-               num_row, accurate), num_row, accurate, qtd_per, d,
+look_fubest_corr(varInd(qtd_per),
+               colnames(varInd(qtd_per))[length(varInd(qtd_per))]),qtd_per, d,
                fator_multiplicativo)
         if (any(is.na(tab_log[1,]), na.rm = F)){
           tab_log[1,] = new_row
@@ -1194,7 +773,9 @@ look_fuzzy_set(varInd(qtd_per),
           tab_log = rbind(tab_log, new_row)
           View(tab_log)  
         }
+        
       }
+        
     }
   }
   
@@ -1214,11 +795,8 @@ look_fuzzy_set(varInd(qtd_per),
 
 #variaveis da função
 # 1 - quantidades máximas de dias de variação do preço
-# 2 - quantidade de valores em cada amostra estratificada
-# 3 - acurácia para procurar os parametros da função fuzzy
 # 4 - vetor com os períodos que serão analizados
-# 5 - fator que ira multiplicar o iqr para a retirada de outliers
-# 6 - numero de linhas de parametros em cada indice
+# 5 - fator máximo que ira multiplicar o iqr para a retirada de outliers
 
-criar_tab(15, 5, 1, range_per = 4:7, 100, 5)
+criar_tab(15, range_per = 4:7, 5)
 
