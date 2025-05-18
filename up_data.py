@@ -30,6 +30,8 @@ try:
 	import mariadb
 	import datetime
 	from selenium import webdriver
+	from selenium.webdriver.chrome.service import Service
+	from selenium.webdriver.chrome.options import Options
 	from bs4 import BeautifulSoup
 	import sys
 
@@ -47,7 +49,8 @@ try:
 	def isCorr(dic):  ## função para verificar se os dados estão corretos
 		incorr = []
 		for i in dic:
-			if i == '' or i == '-' or i == '\n-':
+			valor = i.strip()  # Remove espaços e quebras de linha
+			if valor == '' or valor == '-':
 				incorr.append(i)
 		if len(incorr) > 0:
 			for j in incorr:
@@ -57,25 +60,35 @@ try:
 	def last_letter(word):	## funcao para retornar o ultimo caractere de uma string
 		return word[::-1]
 
-	driver = webdriver.Chrome("C:\Program Files\Google\Chrome\Application\chromedriver-win64\chromedriver.exe")
+	caminho = r"C:/Program Files/Google/Chrome/Application/chromedriver-win64/chromedriver.exe"
+	service = Service(executable_path=caminho)
+
+	# (Opcional) configurar opções
+	options = Options()
+	# options.add_argument("--headless")  # se quiser rodar em segundo plano
+
+	# Instanciar o driver corretamente
+	driver = webdriver.Chrome(service=service, options=options)
 
 	driver.get("https://fundamentus.com.br/resultado.php")
 	content = driver.page_source
-	soup = BeautifulSoup(content)
+	soup = BeautifulSoup(content, "html.parser")
 
 	#           Montando a lista de empresas                #
 	empresas = []
-	for a in soup.findAll('span'):
+	for a in soup.find_all('span'):
+
 		element = a.find('a')
 		str_ind = a.text[4]
 		for i in range(3, 7):
+
 			if str_ind == str(i) and 5 <= len(a.text) <= 6:  ## verificando se o codigo é de uma acao (o 5nt digito é 3-6)
 				empresas.append(a.text)
 
 	mydb = mariadb.connect(
 		host="localhost",
 		user="root",
-		password=None,
+		password="",
 		database="invest"
 	)
 	mycursor = mydb.cursor()
@@ -86,12 +99,12 @@ try:
 		v_dados = []  # List to store values of datas coletados do site
 		driver.get(f"https://fundamentus.com.br/detalhes.php?papel={emp}")  ## link que será pego para cada ação
 		content = driver.page_source
-		soup = BeautifulSoup(content)
-		for a in soup.findAll('td'):  ## elementos da tabela que contém os valores
+		soup = BeautifulSoup(content, "html.parser")
+		for a in soup.find_all('td'):  ## elementos da tabela que contém os valores
 			element = a.find('span', attrs={'class': 'txt'})  ## os valores estao dentro de <span>
 			if hasattr(element, 'text'):  ## checando se os elementos tem o atributo txt
 				v_dados.append(element.text)  ## adicionando os dados e um dicionario
-				'''\     
+				'''
 							# SUMÁRIO DOS DADOS EM v_dados[]  ## !IMPORTANT, Esse sumário não serve para os bancos
 	
 				Papel:  1; Cotação:  3; Tipo:  5; Data últ cot:  7; Empresa:  9; Min 52 sem:  11; Setor:  13;
