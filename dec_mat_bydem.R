@@ -2,12 +2,49 @@ library(tidyverse)
 library(gridExtra)
 library(ggplot2)
 library(readxl)
+library(quantmod)
+library(dplyr)
+library(lubridate)
 
 setwd("C:/files/projects/programacao/python/acoes_data/")
 
 df_tri = read.csv("data/acoesb3.csv")
 
-df_day = read.csv("data/acoesb3cot.csv")
+'df_day = read.csv("data/acoesb3cot.csv")'
+
+emp_codes = unique(df_tri$codigo)
+
+get_data_yahoo <- function(ticker, from = "2010-01-01", to = Sys.Date()) {
+  # Obter cotações diárias
+  stock_data <- getSymbols(ticker, src = "yahoo", from = from, to = to, auto.assign = FALSE)
+  stock_data <- as.data.frame(stock_data)
+  stock_data$date <- as.Date(rownames(stock_data))
+  colnames(stock_data) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted", "date")
+  
+  # Obter dividendos
+  dividends <- getDividends(ticker, from = from, to = to, auto.assign = FALSE)
+  dividends <- as.data.frame(dividends)
+  dividends$date <- as.Date(rownames(dividends))
+  colnames(dividends) <- c("dividends", "date")
+  
+  # Juntar dividendos com cotações
+  df <- left_join(stock_data, dividends, by = "date") %>%
+    arrange(date) %>%
+    mutate(dividends = ifelse(is.na(dividends), 0, dividends))
+  
+  # Calcular dividendos acumulados nos últimos 12 meses para cada linha
+  df <- df %>%
+    mutate(div_12m = sapply(date, function(d) {
+      sum(df$dividends[df$date > (d - 365) & df$date <= d], na.rm = TRUE)
+    }))
+  
+  # Calcular dividend yield (DY = dividendos dos últimos 12 meses / preço ajustado)
+  df <- df %>%
+    mutate(div_yield = ifelse(Adjusted > 0, div_12m / Adjusted, NA))
+  
+  return(df)
+}
+
 
 #função para removendo valores infinitos
 
