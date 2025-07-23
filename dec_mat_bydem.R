@@ -1,3 +1,4 @@
+# Suas bibliotecas originais
 library(tidyverse)
 library(gridExtra)
 library(ggplot2)
@@ -5,46 +6,24 @@ library(readxl)
 library(quantmod)
 library(dplyr)
 library(lubridate)
+library(openxlsx) # Adicionado aqui para garantir que a função o encontre
 
-setwd("C:/files/projects/programacao/python/acoes_data/")
-
-df_tri = read.csv("data/acoesb3.csv")
-
-'df_day = read.csv("data/acoesb3cot.csv")'
-
-emp_codes = unique(df_tri$codigo)
-
-get_data_yahoo <- function(ticker, from = "2010-01-01", to = Sys.Date()) {
-  # Obter cotações diárias
-  stock_data <- getSymbols(ticker, src = "yahoo", from = from, to = to, auto.assign = FALSE)
-  stock_data <- as.data.frame(stock_data)
-  stock_data$date <- as.Date(rownames(stock_data))
-  colnames(stock_data) <- c("Open", "High", "Low", "Close", "Volume", "Adjusted", "date")
-  
-  # Obter dividendos
-  dividends <- getDividends(ticker, from = from, to = to, auto.assign = FALSE)
-  dividends <- as.data.frame(dividends)
-  dividends$date <- as.Date(rownames(dividends))
-  colnames(dividends) <- c("dividends", "date")
-  
-  # Juntar dividendos com cotações
-  df <- left_join(stock_data, dividends, by = "date") %>%
-    arrange(date) %>%
-    mutate(dividends = ifelse(is.na(dividends), 0, dividends))
-  
-  # Calcular dividendos acumulados nos últimos 12 meses para cada linha
-  df <- df %>%
-    mutate(div_12m = sapply(date, function(d) {
-      sum(df$dividends[df$date > (d - 365) & df$date <= d], na.rm = TRUE)
-    }))
-  
-  # Calcular dividend yield (DY = dividendos dos últimos 12 meses / preço ajustado)
-  df <- df %>%
-    mutate(div_yield = ifelse(Adjusted > 0, div_12m / Adjusted, NA))
-  
-  return(df)
+################################################################################
+#####    Sua função para escrever a tabela (com uma pequena correção)   ########
+################################################################################
+escrever_res = function(df, fpath, extension, fname){
+  timestamp <- format(Sys.time(), "%Y-%m-%d_%H-%M-%S")
+  fil_nam <- paste0(fname, '_', timestamp, extension)
+  full_path <- paste0(fpath, fil_nam)
+  if (extension == '.xlsx'){
+    write.xlsx(df, file = full_path)
+  } else if (extension == '.csv'){
+    write.csv(df, file = full_path, row.names = FALSE)
+  } else {
+    stop("Extensão de arquivo não suportada. Use '.csv' ou '.xlsx'.")
+  }
+  return(full_path)
 }
-
 
 #função para removendo valores infinitos
 
@@ -54,329 +33,68 @@ rmv_inf_values_row <- function(df) {
   return(df)
 }
 
-# função para remover valores NA
-
-rmv_na_val <- function(df) {
-  incomplete_rows <- !complete.cases(df)
-  
-  if (any(incomplete_rows)) {
-    df <- df[complete.cases(df), ]
-  }
-  
-  return(df)
-}
-
 ################################################################################
-########         função para escrever tabela em uma planilha         ###########
+###  Função otimizada para calcular e retornar as variações dos preços      ###
 ################################################################################
+# Argumentos:
+#   df_trimestre: O tibble de UM trimestre, vindo da sua lista 'crit_tri'.
+#   df_day_completo: O data frame com TODAS as cotações diárias.
+#   dias_variacao: O número de dias no futuro para calcular a variação.
 
-##    Argumentos
-# 1 - object
-# 2 - file path
-# 3 - extensão do arquivo (.alguma_coisa)
-# 4 - nome do arquivo
-
-escrever_res = function(df, fpath, extension, fname){
-  library(openxlsx)
+calcular_variacao_preco <- function(df_trimestre, df_day_completo, dias_variacao) {
   
-  # Obter uma representação do tempo como uma única string
-  timestamp <- format(Sys.time(), "%Y-%m-%d_%H-%M-%S")
+  # 1. Prepara os dados iniciais, calculando a data final alvo para cada ação
+  df_precos_iniciais <- df_trimestre %>%
+    mutate(
+      data_inicial = as.Date(data_cotacao),
+      data_final_alvo = data_inicial + days(dias_variacao),
+      preco_inicial = `Preço da Ação`
+    ) %>%
+    select(codigo, data_inicial, data_final_alvo, preco_inicial)
   
-  # Criar o nome do arquivo combinando o nome do DataFrame, timestamp e extensão
-  fnam <- paste(fname, '_', timestamp, extension, sep = '')
-  fil_nam <- gsub("\\s+", "", fnam)
-  fil_nam <- gsub(':', '_', fil_nam)
+  # 2. Otimização: Para cada ação, encontra a PRIMEIRA cotação disponível
+  #    APÓS a data final alvo. Isso é feito com um join condicional.
+  df_precos_finais <- df_precos_iniciais %>%
+    left_join(
+      df_day_completo %>% select(codigo, data_cotacao, preco_fechamento),
+      by = "codigo",
+      relationship = "many-to-many"
+    ) %>%
+    filter(data_cotacao.y >= data_final_alvo) %>% # A data da cotação final deve ser >= à data alvo
+    group_by(codigo) %>%
+    slice_min(order_by = data_cotacao.y, n = 1, with_ties = FALSE) %>% # Pega a mais próxima
+    ungroup() %>%
+    select(codigo, preco_final = preco_fechamento, data_final_real = data_cotacao.y)
   
-  # Verificar a extensão e escrever o arquivo apropriado
-  if (extension == '.xlsx'){
-    return(write.xlsx(df, file = paste(fpath, fil_nam, extension, sep = '')))
-  }
-  if (extension == '.csv'){
-    return(write.csv(df, file = paste(fpath, fil_nam, sep = '')))
-  }
+  # 3. Junta os preços iniciais e finais e calcula a variação
+  df_resultado_final <- df_precos_iniciais %>%
+    left_join(df_precos_finais, by = "codigo") %>%
+    # Calcula a variação apenas para as linhas onde um preço final foi encontrado
+    mutate(
+      variacao_preco = ifelse(
+        !is.na(preco_final), 
+        (preco_final - preco_inicial) / preco_inicial, 
+        NA_real_
+      )
+    ) %>%
+    # Remove casos onde não foi possível calcular a variação (preço final não encontrado)
+    filter(!is.na(variacao_preco)) %>%
+    select(
+      codigo, 
+      preco_inicial, 
+      preco_final, 
+      data_inicial, 
+      data_final_real,
+      variacao_preco = variacao_preco
+    )
+  
+  # 4. Junta o resultado da variação com a tabela original
+  # para "mostrar ele junto com a variação de preços"
+  df_trimestre_com_variacao <- df_trimestre %>%
+    inner_join(df_resultado_final, by = "codigo")
+  
+  return(df_trimestre_com_variacao)
 }
-
-
-#coletando as datas dos últimos balanços  
-ult_bal_dates = c()
-for (i in 1:nrow(df_tri)){
-  if (df_tri[i,"ultBal"] %in% ult_bal_dates){}
-  else{
-    ult_bal_dates = c(ult_bal_dates, df_tri[i,"ultBal"])
-  }
-}
-
-#retirando os valores das empresas que tem os trimestres vigentes diferentes
-#de 31/03, 30/06, 30/09 e 31/12
-for (t in ult_bal_dates) {
-  if (endsWith(t, '03-31')){} else if(endsWith(t, '06-30')){}
-  else if(endsWith(t, '09-30')){} else if(endsWith(t, '12-31')){}else {
-    ult_bal_dates = ult_bal_dates[-match(t, ult_bal_dates)]
-  }
-}
-
-#separando os df por períodos
-
-#lista para conter os períodos
-trimestres = list()
-
-#lista para conter os critérios por períodos
-crit_tri = list()
-
-qtd_dias = 6*30 #qtd de dias de variação
-
-qtd_dias_est = 7   #qtd de dias para o mercado estabelecer o preço
-
-#criando os valores dos critérios
-for (per in 1:length(ult_bal_dates)){
-  print(paste('Criando o DF para o periodo: ', ult_bal_dates[per]))
-  
-  
-  #Criando as variáveis do db trimestral
-  ult_bal = codigo = roic = cres_rec5 = divb = disp = ativc = c();
-  ativ = patl = recl12 = ebit12 = Lucl12 = recl3 = ebit3 = Lucl3 = ultIns = c()
-  
-  #loop através das linhas do db trimestral
-  for (i in 1:nrow(df_tri)){
-    
-    #escolhendo o trimestre a ser trabalhado
-    if (df_tri[i,"ultBal"] == ult_bal_dates[per]){
-      
-      ult_bal =  c(ult_bal, df_tri[i,"ultBal"])
-      ultIns = c(ultIns, df_tri[i, "ultInsert"])
-      codigo = c(codigo, df_tri[i,"codigo"])
-      roic = c(roic, df_tri[i,"roic"])
-      cres_rec5 = c(cres_rec5, df_tri[i,"cresRec5a"])
-      divb = c(divb, df_tri[i,"divBruta"])
-      disp = c(disp, df_tri[i,"disponib"])
-      ativc = c(ativc, df_tri[i,"ativCirc"])
-      ativ = c(ativ, df_tri[i,"ativos"])
-      patl = c(patl, df_tri[i,"patLiq"])
-      recl12 = c(recl12, df_tri[i,"recLiq12m"])
-      ebit12 = c(ebit12, df_tri[i,"ebit12m"])
-      Lucl12 = c(Lucl12, df_tri[i,"LucLiq12m"])
-      recl3 = c(recl3, df_tri[i,"recLiq3m"])
-      ebit3 = c(ebit3, df_tri[i, "ebit3m"])
-      Lucl3 = c(Lucl3, df_tri[i, "LucLiq3m"])
-    }
-  }
-  
-  #df trimestral das demonstrações
-  df_tri_dem = data.frame(ult_bal, roic, cres_rec5,
-                          divb, disp, ativc, ativ, patl, recl12,
-                          ebit12, Lucl12, recl3, ebit3, Lucl3, ultIns,
-                          row.names = codigo)
-  
-  #criando as variaveis do db diário
-  
-  ult_cot = cotAtual = cod = divY = n_ac = cotF = n_acF = c()
-  
-  # loop nas linhas do dbday
-  for (i in 1:nrow(df_day)){
-    
-    # obtendo o número da posição do codigo atual no df_tri_dem
-    j_dem = match(df_day[i,"cod"], row.names(df_tri_dem))
-    if (is.na(j_dem)){}
-    else {
-      # verificando se o codigo da ação já pertence a variavel cod    
-      if (df_day[i,"cod"] %in% cod){
-        
-        #Se pertence:
-        # obtendo o número da posição desse código no cod
-        j = match(df_day[i,"cod"], cod)
-        
-        # verificando se o valor da ultima cotação da iteração atual é 
-        # menor ou igual a data de inserção + dias
-        if (as.Date((df_day[i,'ultCot'])) <= as.Date(ultIns)[j_dem]+qtd_dias){
-          
-          # verificando se o valor da ultima cotação da iteração atual é maior que
-          #o valor pertencente à variável e menor ou igual a data de inserção
-          # acrescida dos dias de equilibrio de preço do mercado
-          if (as.Date(df_day[i,"ultCot"]) > as.Date(df_day[j,"ultCot"]) &&
-              as.Date(df_day[i,'ultCot']) <=
-              as.Date(ultIns[j_dem]) + qtd_dias_est){
-            
-            #se for maior: retirando o valor de cada variável correspondente à
-            #posição do valor pertencente
-            ult_cot = ult_cot[-j]; cod = cod[-j]; cotAtual = cotAtual[-j];
-            divY = divY[-j]; n_ac = n_ac[-j]; cotF = cotF[-j]; n_acF = n_acF[-j]
-            
-            #colocando os valores que teve a maior ultCot (preço atualizado)          
-            ult_cot = c(ult_cot, df_day[i,"ultCot"])
-            cod = c(cod, df_day[i,"cod"])
-            cotAtual = c(cotAtual, df_day[i,"cotAtual"])
-            divY = c(divY, df_day[i, "divYield"])
-            n_ac = c(n_ac, df_day[i, "nAcoes"])
-            cotF = c(cotF, df_day[i, "cotAtual"])
-            n_acF = c(n_acF, df_day[i, "nAcoes"])
-          } else {
-            cotF[j] = df_day[i, "cotAtual"]
-            
-            n_acF[j] = df_day[i, "nAcoes"]
-          }
-          
-        }
-        
-        
-      } else if (as.Date(df_day[i,'ultCot']) <= as.Date(ultIns[j_dem])) {
-        
-        #se não pertence e é menor que o período:
-        #apenas colocando o valor da iteração atual
-        ult_cot = c(ult_cot, df_day[i,"ultCot"])
-        cod = c(cod, df_day[i,"cod"])
-        cotAtual = c(cotAtual, df_day[i,"cotAtual"])
-        divY = c(divY, df_day[i, "divYield"])
-        n_ac = c(n_ac, df_day[i, "nAcoes"])
-        cotF = c(cotF, df_day[i, "cotAtual"])
-        n_acF = c(n_acF, df_day[i, "nAcoes"])
-      } 
-    }
-  }
-  
-  
-  # ordenando as variáves antes de se unirem ao trimestral
-  ult_cot_t = cotAtual_t = divY_t = n_ac_t = cotF_t = n_acF_t = c()
-  
-  #loop através das linhas do db trimestral das demonstrações
-  for (i in 1:nrow(df_tri_dem)){
-    
-    #encontrando a posição do codigo atual na linha
-    j = match(row.names(df_tri_dem)[i], cod)
-    
-    ult_cot_t = c(ult_cot_t, ult_cot[j])
-    cotAtual_t = c(cotAtual_t, cotAtual[j])
-    divY_t = c(divY_t, divY[j])
-    n_ac_t = c(n_ac_t, n_ac[j])
-    cotF_t = c(cotF_t, cotF[j])
-    n_acF_t = c(n_acF_t, n_acF[j])
-  }
-  
-  df_tri_dem$ult_cot_t = ult_cot_t; df_tri_dem$cotAtual_t = cotAtual_t
-  df_tri_dem$divY_t = divY_t; df_tri_dem$n_ac_t = n_ac_t
-  df_tri_dem$cotF_t = cotF_t; df_tri_dem$n_acF_t = n_acF_t
-  
-  
-  #gridExtra::grid.table(df_tri_3t22 %>% slice(1:20))
-  
-  arr_ind = 3 #casas decimais dos indices
-  
-  # criando os índices
-  lpa = round(Lucl12/n_ac_t, arr_ind)
-  lpa3 = round(as.numeric(Lucl3)/n_ac_t, arr_ind)
-  vpa = round(patl/n_ac_t, arr_ind)
-  cx_a = round(disp/n_ac_t, arr_ind)
-  ativc_a = round(ativc/n_ac_t, arr_ind)
-  ativ_a = round(ativ/n_ac_t, arr_ind)
-  divb_a = round(divb/n_ac_t, arr_ind)
-  ebit_a = round(ebit12/n_ac_t, arr_ind)
-  ebit_a3 = round(as.numeric(ebit3)/n_ac_t, arr_ind)
-  dividend = round((as.numeric(divY_t)/100)*cotAtual_t, arr_ind)
-  rec_a = round(recl12/n_ac_t, arr_ind)
-  rec_a3 = round(as.numeric(recl3)/n_ac_t, arr_ind)
-  cot = cotAtual_t
-  
-  
-  crit = data.frame(lpa, lpa3, vpa, cx_a, ativc_a, ativ_a, divb_a, ebit_a,
-                    ebit_a3, dividend, rec_a, rec_a3, cot,
-                    row.names = codigo)
-  
-  #############       filtrando o db        ###################################
-  
-  
-  
-  crit = rmv_inf_values_row(crit)
-  
-  
-  crit <- rmv_na_val(crit)
-  
-  
-  #passando o df para a lista
-  trimestres[[per]] = df_tri_dem
-  
-  
-  colnames(crit) = c("LPA", 'LPA (tri)', "VPA",
-                     "Caixa/Ação", "Ativos Circulantes/Ação",
-                     "Ativos/Ação", "Dív Bruta/Ação", "EBIT/Ação",
-                     'EBIT/Ação (tri)',
-                     "Dividendos",
-                     'Receita/ Ação',
-                     'Receita/Ação (tri)',
-                     'Preço da Ação')
-  
-  #gridExtra::grid.table(crit %>% slice(1:20))
-  
-  crit_tri[[per]] = crit
-  print(paste('DF do periodo: ', ult_bal_dates[per], ' criado'))
-}
-
-################################################################################
-#########       função para retornar as variações dos preços      ##############
-################################################################################
-
-#per_i => periodo a ser analisado
-addVarPrice = function(per_i){
-  
-  var_price = c()
-  
-  for (r in 1:nrow(crit_tri[[per_i]])) {
-    
-    # encontrando a posição da linha do codigo da iteração no df das demonstrações
-    j_dem = match(row.names(crit_tri[[per_i]])[r], row.names(trimestres[[per_i]]))
-    
-    # encontrando a posição da linha do codigo da iteração no df dos criterios
-    # do período anterior
-    j_dem_bef = match(row.names(crit_tri[[per_i]])[r], row.names(crit_tri[[per_i-1]]))
-    
-    # criando o df das variacoes dos indices
-    
-    price_i = trimestres[[per_i]][j_dem,'cotAtual_t']
-    price_f = trimestres[[per_i]][j_dem,'cotF_t']*
-      (trimestres[[per_i]][j_dem,'n_acF_t']/trimestres[[per_i]][j_dem, 'n_ac_t'])
-    
-    var_price = c(var_price, round((price_f - price_i)/price_i, 4))
-    
-  }
-  
-  # adicionando as variações dos precos ao df crit do periodo
-  crit_tri[[per_i]]$v_price = var_price
-  
-  colnames(crit_tri[[per_i]]) = c("L/P", 'L/P (tri)', "VPA/P", "ROE" , 'ROE (tri)', "ROIC",
-                                  "(Caixa/Ação)/Preço", "(Ativos Circulantes/Ação)/Preço",
-                                  "(Ativos/Ação)/Preço", "Dív Bruta/Caixa", "Marg. EBIT",
-                                  'Marg. EBIT (tri)', "Marg. Líquida", 'Marg. Líquida (tri)',
-                                  "Cresc. Rec. (5 Anos)", "Dividendyield", "Lynch",
-                                  'Lynch (tri)',  "Dív. Bruta/Lucro Mensal", 'PSR (invertido)',
-                                  'PSR (invertido) (tri)', 'EBIT/P', 'EBIT/P (tri)',
-                                  'EBIT/Ativo', 'EBIT/Ativo (tri)', 'Div Bruta/Patrimonio', "v_price")
-  
-  #removendo valores infinitos
-  
-  
-  rmv_inf_values_row <- function(df) {
-    rows_with_inf <- apply(df, 1, function(row) any(is.infinite(row)))
-    df <- df[!rows_with_inf, ]
-    return(df)
-  }
-  
-  crit_tri[[per_i]] = rmv_inf_values_row(crit_tri[[per_i]])
-  
-  #removando valore NA
-  
-  rmv_na_val <- function(df) {
-    incomplete_rows <- !complete.cases(df)
-    
-    if (any(incomplete_rows)) {
-      df <- df[complete.cases(df), ]
-    }
-    
-    return(df)
-  }
-  crit_tri[[per_i]] <- rmv_na_val(crit_tri[[per_i]])
-  
-  return(crit_tri[[per_i]])
-}
-
-
 
 ############################################################################
 ###############    função para retirar valores extremos    #################
@@ -438,6 +156,209 @@ rmv_wild = function(df, fator_multiplicativo) {
   return(df)
 }
 
+
+# Seu diretório de trabalho original
+setwd("C:/files/programacao/python/acoes_data")
+
+# Seu carregamento de dados original
+df_tri = read.csv("data/acoesb3.csv")
+
+df_day = read.csv("data/df_day_2025-07-09_09-55-20.csv")
+'emp_codes = unique(df_tri$codigo)
+emp_codes_sa = paste0(emp_codes, ".SA") # Adiciona .SA para a busca
+
+# Suas datas originais
+data_inicial = min(as.Date(df_tri$ultBal))
+data_final = max(as.Date(df_tri$ultInsert))
+
+# Seu dataframe final original
+df_day <- data.frame()
+
+# Seu loop e sua lógica originais
+for (ticker in emp_codes_sa) { # Usamos a variável com .SA para a busca
+  tryCatch({
+    # Baixar cotação diária
+    dados <- getSymbols(ticker, from = data_inicial, to = data_final, auto.assign = FALSE)
+    dados <- data.frame(date = index(dados), coredata(dados))
+    colnames(dados) <- c("date", "open", "high", "low", "close", "volume", "adjusted")
+    dados$codigo <- ticker # Aqui o código ainda tem .SA
+    
+    # Baixar dividendos
+    dividendos_xts <- getDividends(ticker, from = data_inicial - years(1), to = data_final, auto.assign = FALSE)
+    
+    dividendos <- data.frame(date = index(dividendos_xts), dividend_val = coredata(dividendos_xts))
+    colnames(dividendos) <- c("date", "dividend")
+    
+    # Sua lógica de cálculo original, linha por linha (rowwise)
+    dados <- dados %>%
+      rowwise() %>%
+      mutate(dividendo_ttm = sum(dividendos$dividend[dividendos$date > (date - 365) & dividendos$date <= date], na.rm = TRUE)) %>%
+      ungroup()
+    
+    # Seu cálculo de Dividend Yield original
+    dados <- dados %>%
+      mutate(dividend_yield = ifelse(adjusted > 0, dividendo_ttm / adjusted, NA))
+    
+    # Adicionar ao dataframe final
+    df_day <- bind_rows(df_day, dados)
+    
+    cat("Sucesso:", ticker, "\n")
+    
+  }, error = function(e) {
+    cat("Erro em", ticker, ":", conditionMessage(e), "\n")
+  })
+}
+
+
+# --- FINALIZAÇÃO E SALVAMENTO USANDO SUA FUNÇÃO ---
+cat("\n--- Processamento Concluído ---\n")
+
+# --- ALTERAÇÃO AQUI ---
+# Limpeza final: remove o sufixo .SA da coluna de códigos de uma só vez
+cat("Limpando sufixo .SA da coluna de códigos...\n")
+df_day$codigo <- gsub(".SA", "", df_day$codigo)
+# ----------------------
+
+# Chamando sua função para salvar o arquivo com os códigos já limpos
+arquivo_salvo <- escrever_res(
+  df = df_day, 
+  fpath = "data/", 
+  extension = ".csv", 
+  fname = "df_day"
+)
+
+cat("\nArquivo salvo com sucesso em:", arquivo_salvo, "\n")'
+
+# Carregando os dados
+df_tri_raw <- read.csv("data/acoesb3.csv")
+df_day_raw <- read.csv("data/df_day_2025-07-09_09-55-20.csv") # Usando o arquivo que o script anterior gerou
+
+# --- PREPARAÇÃO E LIMPEZA INICIAL DOS DADOS ---
+
+# 1. Converter colunas de data para o tipo Date (essencial para joins e filtros)
+df_tri <- df_tri_raw %>%
+  mutate(
+    ultBal = as.Date(ultBal),
+    ultInsert = as.Date(ultInsert),
+    # Adicionando a coluna nAcoes que é necessária para os cálculos.
+    # !! CERTIFIQUE-SE DE QUE ESTA COLUNA EXISTE NO SEU CSV 'acoesb3.csv' !!
+    # Se o nome for outro, ajuste aqui. Ex: nAcoes = sua_coluna_de_acoes
+    # nAcoes = nAcoes 
+  )
+
+df_day <- df_day_raw %>%
+  mutate(date = as.Date(date)) %>%
+  # Renomeando colunas para clareza e para facilitar o join
+  rename(data_cotacao = date, codigo = codigo, preco_fechamento = close, dy_decimal = dividend_yield)
+
+# 2. Filtrar apenas as datas de balanço trimestrais padrão (muito mais rápido que um loop)
+valid_endings <- c("03-31", "06-30", "09-30", "12-31")
+df_tri_filtrado <- df_tri %>%
+  filter(format(ultBal, "%m-%d") %in% valid_endings)
+
+# --- NOVO: Excluindo períodos específicos ---
+datas_para_remover <- as.Date(c("2022-03-31", "2022-06-30"))
+
+df_tri_filtrado <- df_tri_filtrado %>%
+  filter(!ultBal %in% datas_para_remover)
+
+cat("Info: Períodos", paste(datas_para_remover, collapse = " e "), "removidos da análise.\n")
+# -------------------------------------------
+
+# --- O CORAÇÃO DA OTIMIZAÇÃO: JUNÇÃO DE DADOS (SUBSTITUIÇÃO DOS LOOPS) ---
+
+# O objetivo é: para cada linha em df_tri_filtrado, encontrar a primeira cotação em df_day
+# que seja igual ou posterior à data de inserção do balanço (ultInsert).
+
+# Usamos um "join por condição" para encontrar todos os pares válidos
+df_completo <- df_tri_filtrado %>%
+  left_join(
+    df_day,
+    by = "codigo",
+    # A condição de join: data da cotação deve ser posterior à data de inserção do balanço
+    relationship = "many-to-many"
+  ) %>%
+  filter(data_cotacao >= ultInsert) %>%
+  # Agora, para cada balanço, selecionamos apenas a cotação mais antiga que satisfaz a condição
+  group_by(codigo, ultBal) %>%
+  slice_min(order_by = data_cotacao, n = 1, with_ties = FALSE) %>%
+  ungroup()
+
+# --- CÁLCULOS DOS INDICADORES (SUBSTITUIÇÃO DO SEGUNDO GRANDE LOOP) ---
+# Todos os cálculos são feitos de uma vez, de forma vetorizada, usando mutate()
+
+# Supondo que você tenha as funções de limpeza `rmv_inf_values_row` e `rmv_na_val` carregadas no seu ambiente
+# crit = rmv_inf_values_row(crit)
+# crit <- rmv_na_val(crit)
+
+crit_df <- df_completo %>%
+  # Renomeia colunas para corresponder aos seus cálculos
+  rename(
+    cotAtual_t = preco_fechamento,
+    divY_t = dy_decimal,
+    n_ac_t = nAcoes # Certifique-se que df_tri tem a coluna 'nAcoes'
+  ) %>%
+  # Calcula todos os indicadores de uma vez
+  mutate(
+    lpa = round(LucLiq12m / n_ac_t, 3),
+    lpa3 = round(as.numeric(LucLiq3m) / n_ac_t, 3),
+    vpa = round(patLiq / n_ac_t, 3),
+    cx_a = round(disponib / n_ac_t, 3),
+    ativc_a = round(ativCirc / n_ac_t, 3),
+    ativ_a = round(ativos / n_ac_t, 3),
+    divb_a = round(divBruta / n_ac_t, 3),
+    ebit_a = round(ebit12m / n_ac_t, 3),
+    ebit_a3 = round(as.numeric(ebit3m) / n_ac_t, 3),
+    dividendos = round(divY_t * cotAtual_t, 3), # DY já é decimal, não precisa dividir por 100
+    rec_a = round(recLiq12m / n_ac_t, 3),
+    rec_a3 = round(as.numeric(recLiq3m) / n_ac_t, 3),
+    preco_acao = cotAtual_t
+  ) %>%
+  # Seleciona e renomeia as colunas finais para o seu formato desejado
+  select(
+    ultBal,
+    codigo,
+    data_cotacao,
+    "LPA" = lpa,
+    "LPA (tri)" = lpa3,
+    "VPA" = vpa,
+    "Caixa/Ação" = cx_a,
+    "Ativos Circulantes/Ação" = ativc_a,
+    "Ativos/Ação" = ativ_a,
+    "Dív Bruta/Ação" = divb_a,
+    "EBIT/Ação" = ebit_a,
+    "EBIT/Ação (tri)" = ebit_a3,
+    "Dividendos" = dividendos,
+    "Receita/ Ação" = rec_a,
+    "Receita/Ação (tri)" = rec_a3,
+    "Preço da Ação" = preco_acao
+  )
+
+# --- SEPARAÇÃO FINAL POR TRIMESTRE (SUBSTITUIÇÃO DO ÚLTIMO LOOP) ---
+
+# A função group_split() cria a lista de data frames, um para cada trimestre.
+# O resultado é idêntico à sua lista 'crit_tri'
+crit_tri <- crit_df %>%
+  group_by(ultBal) %>%
+  group_split()
+
+# Para nomear a lista como antes (opcional, mas bom para consistência)
+nomes_trimestres <- crit_df %>%
+  arrange(ultBal) %>%
+  pull(ultBal) %>%
+  unique()
+
+names(crit_tri) <- nomes_trimestres
+
+# --- Verificação do Resultado ---
+print("Processo concluído!")
+print(paste(length(crit_tri), "data frames trimestrais foram criados na lista 'crit_tri'."))
+
+# Para ver o cabeçalho do primeiro data frame da lista
+print(head(crit_tri[[1]]))
+
+# Para ver o cabeçalho do data frame de um trimestre específico
+# print(head(crit_tri$`2024-03-31`))
 
 
 #escolhendo o periodo que sera analisado
