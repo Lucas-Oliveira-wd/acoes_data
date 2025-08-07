@@ -6,7 +6,9 @@ library(readxl)
 library(quantmod)
 library(dplyr)
 library(lubridate)
-library(openxlsx) # Adicionado aqui para garantir que a função o encontre
+library(openxlsx)
+library(dplyr)
+library(broom) # Adicionado aqui para garantir que a função o encontre
 
 ################################################################################
 #####    Sua função para escrever a tabela (com uma pequena correção)   ########
@@ -96,64 +98,139 @@ calcular_variacao_preco <- function(df_trimestre, df_day_completo, dias_variacao
   return(df_trimestre_com_variacao)
 }
 
-############################################################################
-###############    função para retirar valores extremos    #################
-############################################################################
+################################################################################
+#########         Função para remover outliers atraves do iqr         ##########
+################################################################################
 
-# remover valores extremos
-rmv_wild = function(df, fator_multiplicativo) {
+remover_outliers_iqr <- function(dados, fator_multiplicativo = 1.5) {
+  dados_numericos <- dados %>% select(where(is.numeric))
+  indices_outliers <- sapply(dados_numericos, function(coluna) {
+    Q1 <- quantile(coluna, 0.25, na.rm = TRUE)
+    Q3 <- quantile(coluna, 0.75, na.rm = TRUE)
+    IQR_val <- Q3 - Q1
+    limite_inferior <- Q1 - (fator_multiplicativo * IQR_val)
+    limite_superior <- Q3 + (fator_multiplicativo * IQR_val)
+    coluna < limite_inferior | coluna > limite_superior
+  })
+  linhas_para_remover <- apply(indices_outliers, 1, any, na.rm = TRUE)
+  dados_limpos <- dados[!linhas_para_remover, ]
+  linhas_removidas <- nrow(dados) - nrow(dados_limpos)
+  cat(sprintf("Info: %d observações (outliers pelo método IQR) foram removidas.\n\n", linhas_removidas))
+  return(dados_limpos)
+}
+
+################################################################################
+#######       Função para melhorar um modelo de regressão linear        ########
+################################################################################
+
+selecionar_variaveis_linear <- function(dados, 
+                                        coluna_dependente, 
+                                        limiar_correlacao = 0.7, 
+                                        limiar_p_value = 0.05,
+                                        fator_iqr = 1.5) {
   
-  exib_wild = function(dados, fator_multiplicativo){
-    # Obter estatísticas do boxplot
-    stats <- boxplot.stats(dados)
-    
-    # Calcular limites personalizados
-    limite_inferior <- stats$stats[2] - fator_multiplicativo * IQR(dados, na.rm = T)
-    limite_superior <- stats$stats[4] + fator_multiplicativo * IQR(dados, na.rm = T)
-    
-    # Identificar outliers
-    outliers <- dados[dados < limite_inferior | dados > limite_superior]
-    
-    # Exibir os valores dos outliers
-    return(outliers)  
+  # --- 0. Validação e Preparação dos Dados ---
+  if (!coluna_dependente %in% names(dados)) {
+    stop(paste("A coluna dependente '", coluna_dependente, "' não foi encontrada nos dados."))
+  }
+  dados <- as.data.frame(dados)
+  Y <- dados[[coluna_dependente]]
+  X <- dados %>% select(-all_of(coluna_dependente))
+  
+  # --- ALTERAÇÃO 1: Validação para regressão LINEAR ---
+  if (!is.numeric(Y)) {
+    stop("Para regressão linear, a variável dependente deve ser numérica.")
   }
   
-  wild_row = c('so', 'para','length', 'nao', 'ser', 'zero')
+  X <- X %>% select(where(is.numeric))
+  cat("Info: Foram encontradas", ncol(X), "variáveis preditoras numéricas.\n\n")
   
-  n_iter = 0
-  while (length(wild_row) != 0) {
-    wild_row = c()
-    for (c in 1:ncol(df)) {
-      if (length(exib_wild(df[,c], fator_multiplicativo)) != 0){
-        for (i in exib_wild(df[,c], fator_multiplicativo)) {
-          #numero das linhas
-          j = match(i, df[,c])
-          df[j,c] = NA
-          if (row.names(df)[j] %in% wild_row){} else {
-            wild_row = c(wild_row, row.names(df)[j])  
-          }
-        }
-      }
-    }
-    rmv_na_val <- function(df) {
-      incomplete_rows <- !complete.cases(df)
-      
-      if (any(incomplete_rows)) {
-        df <- df[complete.cases(df), ]
-      }
-      
-      return(df)
-    }
-    
-    print(paste('empresas removidas na iteração', n_iter, ':'))
-    print(wild_row)
-    n_iter = n_iter+1
-    
-    
-    df = rmv_na_val(df)  
+  # --- 1. Remoção de Outliers (Método IQR) ---
+  cat("--- Passo 1: Removendo Outliers (Método IQR com fator", fator_iqr, ") ---\n")
+  X$..original_index.. <- 1:nrow(X)
+  X_limpo <- remover_outliers_iqr(X, fator_multiplicativo = fator_iqr)
+  Y_limpo <- Y[X_limpo$..original_index..]
+  X_limpo$..original_index.. <- NULL
+  X <- X_limpo
+  Y <- Y_limpo
+  
+  # --- 2. Pré-verificação de Variáveis Problemáticas ---
+  # (código idêntico, sem alterações)
+  cat("--- Passo 2: Pré-verificação das Variáveis ---\n")
+  sds <- sapply(X, sd, na.rm = TRUE)
+  variaveis_constantes <- names(sds[sds == 0])
+  if (length(variaveis_constantes) > 0) {
+    X <- X %>% select(-all_of(variaveis_constantes))
+    cat("Variáveis removidas por terem desvio padrão zero:", paste(variaveis_constantes, collapse = ", "), "\n")
   }
   
-  return(df)
+  # --- 3. Loop de Remoção por Multicolinearidade ---
+  cat("\n--- Passo 3: Verificando Multicolinearidade (limiar =", limiar_correlacao, ") ---\n")
+  if (ncol(X) >= 2) {
+    while (TRUE) {
+      cor_matrix <- cor(X, use = "pairwise.complete.obs")
+      diag(cor_matrix) <- 0
+      max_cor <- max(abs(cor_matrix), na.rm = TRUE)
+      if (max_cor <= limiar_correlacao) {
+        cat("Nenhuma correlação acima do limiar encontrada. Fim da verificação de multicolinearidade.\n\n")
+        break
+      }
+      local_max_cor <- which(abs(cor_matrix) == max_cor, arr.ind = TRUE)[1, ]
+      var1 <- rownames(cor_matrix)[local_max_cor[1]]
+      var2 <- colnames(cor_matrix)[local_max_cor[2]]
+      
+      # --- ALTERAÇÃO 2: Usa lm() para o modelo linear ---
+      dados_temp <- cbind(Y, X)
+      modelo_temp <- lm(Y ~ ., data = dados_temp)
+      
+      p_values <- broom::tidy(modelo_temp)
+      p_value_var1 <- p_values$p.value[p_values$term == var1]
+      p_value_var2 <- p_values$p.value[p_values$term == var2]
+      var_remover <- if (p_value_var1 > p_value_var2) var1 else var2
+      cat(sprintf("Correlação alta (%.2f) entre '%s' e '%s'. Removendo '%s' (maior p-valor).\n", max_cor, var1, var2, var_remover))
+      X <- X %>% select(-all_of(var_remover))
+      if (ncol(X) < 2) break
+    }
+  }
+  
+  # --- 4. Loop de Remoção por P-valor ---
+  cat("--- Passo 4: Verificando Relevância Estatística (limiar de p-valor =", limiar_p_value, ") ---\n")
+  while (TRUE) {
+    if (ncol(X) == 0) break
+    
+    # --- ALTERAÇÃO 3: Usa lm() para o modelo linear ---
+    dados_temp <- cbind(Y, X)
+    modelo_temp <- lm(Y ~ ., data = dados_temp)
+    
+    p_values_df <- broom::tidy(modelo_temp) %>% filter(term != "(Intercept)")
+    if (nrow(p_values_df) == 0) break
+    max_p_value_row <- p_values_df %>% filter(p.value == max(p.value, na.rm = TRUE))
+    if (max_p_value_row$p.value[1] > limiar_p_value) {
+      var_remover <- max_p_value_row$term[1]
+      cat(sprintf("Removendo '%s' (p-valor = %.3f).\n", var_remover, max_p_value_row$p.value[1]))
+      X <- X %>% select(-all_of(var_remover))
+    } else {
+      cat("Nenhuma variável com p-valor acima do limiar. Fim da seleção.\n\n")
+      break
+    }
+  }
+  
+  # --- 5. Geração do Modelo Final ---
+  cat("--- Passo 5: Geração do Modelo Final ---\n")
+  if (ncol(X) == 0) {
+    cat("Resultado: Nenhuma variável preditora significativa foi encontrada.\n")
+    return("Nenhuma variável preditora significativa foi encontrada.")
+  } else {
+    dados_finais <- cbind(Y, X)
+    colnames(dados_finais)[1] <- coluna_dependente
+    formula_final <- as.formula(paste(coluna_dependente, "~ ."))
+    
+    # --- ALTERAÇÃO 4: Usa lm() para o modelo final ---
+    modelo_final <- lm(formula_final, data = dados_finais)
+    
+    cat("Modelo final criado com as seguintes variáveis:", paste(names(X), collapse = ", "), "\n")
+    return(modelo_final)
+  }
 }
 
 
@@ -354,189 +431,3 @@ names(crit_tri) <- nomes_trimestres
 print("Processo concluído!")
 print(paste(length(crit_tri), "data frames trimestrais foram criados na lista 'crit_tri'."))
 
-# Para ver o cabeçalho do primeiro data frame da lista
-print(head(crit_tri[[1]]))
-
-# Para ver o cabeçalho do data frame de um trimestre específico
-# print(head(crit_tri$`2024-03-31`))
-
-
-#escolhendo o periodo que sera analisado
-per_choice = crit_tri[[4]]
-
-# verificando NA values
-colSums(is.na(per_choice))
-
-boxplot(scale(per_choice), range = 3)
-
-per_choice=rmv_wild(per_choice, 3)
-
-boxplot(scale(per_choice), range = 3)
-
-
-################################################################################
-#############         Escolhendo os Índices           ##########################
-################################################################################
-
-##############                 regressão                    ####################
-
-# Realize a regressão linear
-modelo_regressao <- lm(per_choice$`Preço da Ação`~per_choice$LPA+
-                         per_choice$`LPA (tri)`+per_choice$VPA+
-                         per_choice$`Caixa/Ação`+
-                         per_choice$`Ativos Circulantes/Ação`+
-                         per_choice$`Ativos/Ação`+per_choice$`Dív Bruta/Ação`+
-                         per_choice$`EBIT/Ação`+per_choice$`EBIT/Ação (tri)`+
-                         per_choice$Dividendos+per_choice$`Receita/ Ação`+
-                         per_choice$`Receita/Ação (tri)`)
-
-# Exiba o sumário do modelo
-summary(modelo_regressao)
-
-# vizualizando a matriz de correlação
-library(ggcorrplot)
-corr_matrix <- data.frame(cor(scale(per_choice)))
-ggcorrplot(corr_matrix)
-
-##    Argumentos
-# 1 - object
-# 2 - file path
-# 3 - extensão do arquivo (.alguma_coisa)
-# 4 - nome do arquivo
-escrever_res (corr_matrix,
-    'C:/files/projects/programacao/python/acoes_data/logs/correlation_matrix/',
-    '.xlsx', 'corr_per_choice')
-
-# regressão com algumas variáveis retiradas (valor mais alto das corr altas)
-model_fit = lm(per_choice$`Preço da Ação`~per_choice$LPA+
-                 per_choice$`LPA (tri)`+per_choice$VPA+
-                 per_choice$`Caixa/Ação`+
-                 per_choice$`Ativos Circulantes/Ação`+
-                 per_choice$`Ativos/Ação`+per_choice$`Dív Bruta/Ação`+
-                 per_choice$`EBIT/Ação`+per_choice$`EBIT/Ação (tri)`+
-                 per_choice$Dividendos+
-                 per_choice$`Receita/Ação (tri)`)
-
-summary(model_fit)
-
-# regressão com algumas variáveis retiradas (valor mais alto)
-model_fit2 = lm(per_choice$`Preço da Ação`~per_choice$LPA+
-                  per_choice$`LPA (tri)`+per_choice$VPA+
-                  per_choice$`Caixa/Ação`+
-                  per_choice$`Ativos Circulantes/Ação`+
-                  per_choice$`Ativos/Ação`+per_choice$`Dív Bruta/Ação`+
-                  per_choice$`EBIT/Ação`+
-                  per_choice$Dividendos+
-                  per_choice$`Receita/Ação (tri)`)
-
-summary(model_fit2)
-
-# regressão com algumas variáveis retiradas (valor mais alto)
-model_fit3 = lm(per_choice$`Preço da Ação`~per_choice$LPA+
-                  per_choice$`LPA (tri)`+per_choice$VPA+
-                  per_choice$`Caixa/Ação`+
-                  per_choice$`Ativos Circulantes/Ação`+
-                  per_choice$`Dív Bruta/Ação`+
-                  per_choice$`EBIT/Ação`+
-                  per_choice$Dividendos+
-                  per_choice$`Receita/Ação (tri)`)
-
-summary(model_fit3)
-
-# regressão com algumas variáveis retiradas (valor mais alto)
-model_fit4 = lm(per_choice$`Preço da Ação`~per_choice$LPA+
-                  per_choice$`LPA (tri)`+per_choice$VPA+
-                  per_choice$`Caixa/Ação`+
-                  per_choice$`Ativos Circulantes/Ação`+
-                  per_choice$`EBIT/Ação`+
-                  per_choice$Dividendos+
-                  per_choice$`Receita/Ação (tri)`)
-
-summary(model_fit4)
-
-# regressão com algumas variáveis retiradas (valor mais alto)
-model_fit5 = lm(per_choice$`Preço da Ação`~per_choice$LPA+
-                  per_choice$`LPA (tri)`+per_choice$VPA+
-                  per_choice$`Caixa/Ação`+
-                  per_choice$`Ativos Circulantes/Ação`+
-                  per_choice$`EBIT/Ação`+
-                  per_choice$`Receita/Ação (tri)`)
-
-summary(model_fit5)
-
-# regressão com algumas variáveis retiradas (valor mais alto)
-model_fit6 = lm(per_choice$`Preço da Ação`~per_choice$LPA+
-                  per_choice$VPA+
-                  per_choice$`Caixa/Ação`+
-                  per_choice$`Ativos Circulantes/Ação`+
-                  per_choice$`EBIT/Ação`+
-                  per_choice$`Receita/Ação (tri)`)
-
-summary(model_fit6)
-
-# regressão com algumas variáveis retiradas (valor mais alto)
-model_fit7 = lm(per_choice$`Preço da Ação`~per_choice$LPA+
-                  per_choice$VPA+
-                  per_choice$`Caixa/Ação`+
-                  per_choice$`Ativos Circulantes/Ação`+
-                  per_choice$`EBIT/Ação`)
-summary(model_fit7)
-
-# regressão com algumas variáveis retiradas (valor mais alto)
-model_fit8 = lm(per_choice$`Preço da Ação`~per_choice$LPA+
-                  per_choice$VPA+
-                  per_choice$`Caixa/Ação`+
-                  per_choice$`Ativos Circulantes/Ação`+
-                  per_choice$`EBIT/Ação`)
-
-summary(model_fit8)
-
-# regressão com algumas variáveis retiradas (valor mais alto)
-model_fit9 = lm(per_choice$`Preço da Ação`~
-                  per_choice$`LPA (tri)`+per_choice$VPA+
-                  per_choice$Dividendos)
-
-summary(model_fit9)
-
-# função para a equação da reta de regressão
-#
-#reta = function (lpa, vpa, cxa, atca) {
-#  y = 3.1065 + 3.2643*lpa + 0.4131*vpa + 1.3144*cxa + -0.2865*atca
-#  return(round(y, 2))
-#}
-#
-## vetor para conter os valores
-#p_jus = c()
-#for (p in 1:nrow(per_choice)) {
-#  p_jus[p] = reta(per_choice[p,"LPA"], per_choice[p,"VPA"],
-#                  per_choice[p, "Caixa/Ação"],
-#                  per_choice[p, "Ativos Circulantes/Ação"])
-#}
-#
-
-# função para a equação da reta de regressão
-
-reta = function (lpa_t, vpa, divid) {
-  y = 2.3702 + 6.7774*lpa_t + 0.4300*vpa + 6.1210*divid
-  return(round(y, 2))
-}
-
-# vetor para conter os valores
-p_jus = c()
-for (p in 1:nrow(per_choice)) {
-  p_jus[p] = reta(per_choice[p,"LPA (tri)"], per_choice[p,"VPA"],
-                  per_choice[p, "Dividendos"])
-}
-
-#adicionando ao db
-
-per_choice$preco_jus = p_jus
-
-# analisando a discrepancia
-
-disc = (per_choice$preco_jus - per_choice$`Preço da Ação`)/
-  per_choice$`Preço da Ação`
-
-#adicionando ao db
-
-per_choice$discrepancia = disc
