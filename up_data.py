@@ -1,30 +1,41 @@
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import os # CODIGO INSERIDO: Para acessar variáveis de sistema
+from dotenv import load_dotenv # CODIGO INSERIDO: Para carregar o arquivo .env
+
+# CODIGO INSERIDO: Carrega as variáveis do arquivo .env para o script
+load_dotenv()
 
 # Função para enviar e-mails em caso de erro
 def enviar_email_erro(mensagem):
-    de_email = 'emailautomatico11@gmail.com'
-    para_email = 'lucasoliveira5978@gmail.com'
-    senha = 'nucxkwaaqoazgnxh'
+	# CODIGO INSERIDO: Busca as informações protegidas do arquivo .env
+	de_email = os.getenv('GMAIL_USER')
+	senha = os.getenv('GMAIL_PASS')
+	para_email = 'lucasoliveira5978@gmail.com'
 
-    msg = MIMEMultipart()
-    msg['From'] = de_email
-    msg['To'] = para_email
-    msg['Subject'] = 'Erro na execução do script "up_data.py"'
+	# CODIGO INSERIDO: Validação para garantir que o .env foi lido corretamente
+	if not de_email or not senha:
+		print("Erro: Credenciais não encontradas no arquivo .env")
+		return
 
-    corpo_mensagem = mensagem
-    msg.attach(MIMEText(corpo_mensagem, 'plain'))
+	msg = MIMEMultipart()
+	msg['From'] = de_email
+	msg['To'] = para_email
+	msg['Subject'] = 'Erro na execução do script "up_data.py"'
 
-    try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(de_email, senha)
-        server.sendmail(de_email, para_email, msg.as_string())
-        server.quit()
-        print('E-mail de erro enviado com sucesso!')
-    except Exception as e:
-        print(f'Erro ao enviar e-mail de erro: {str(e)}')
+	corpo_mensagem = mensagem
+	msg.attach(MIMEText(corpo_mensagem, 'plain'))
+
+	try:
+		server = smtplib.SMTP('smtp.gmail.com', 587)
+		server.starttls()
+		server.login(de_email, senha)
+		server.sendmail(de_email, para_email, msg.as_string())
+		server.quit()
+		print('E-mail de erro enviado com sucesso!')
+	except Exception as e:
+		print(f'Erro ao enviar e-mail de erro: {str(e)}')
 
 try:
 	import mariadb
